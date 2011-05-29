@@ -1,0 +1,13 @@
+Albatross!
+
+If you don't know what this is, chances are you don't need it.
+
+Albatross (this iteration of it, anyways) is a Python script that monitors and reports malformed links on endoftheinter.net. The checks it performs (will) include:
+
+1. Checks for the presence of popular [TAG]s in the link title, and ensures that link categories are set appropriately
+2. Checks to see if links on popular upload sites are still active.
+
+Albatross is licensed under the WTFPL. Do what you want with it!
+
+To get started, simply install Python, download albatross, and run it as follows (on a Linux machine, at least):
+./albatross USERNAME PASSWORD START_LINKID END_LINKID

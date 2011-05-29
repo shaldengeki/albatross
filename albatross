@@ -274,6 +274,8 @@ def main():
         lastReason = tuple[0]
 #      data = reportLink(opener, linkID, lastReason, reportComment)
       print "linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
+    elif linkID % 100 == 0:
+      print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
 
 if __name__ == '__main__':
   main()

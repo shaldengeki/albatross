@@ -191,7 +191,7 @@ def checkLinkDeleted(text):
   deletedMatch = re.search(r'\<em\>This link has been deleted, and is no longer available\<\/em\>', text)
   return bool(deletedMatch)
   
-def checkLinkNeedsReporting(text, tag_dict):
+def checkLinkNeedsReporting(text, tag_dict, site_dict):
   """
   Checks to see if a link needs to be reported.
   Checks several things:
@@ -212,6 +212,18 @@ def checkLinkNeedsReporting(text, tag_dict):
       for required_tag in tag_dict[tag.upper()]:
         if required_tag not in categories:
           reason_list.append((3, 'Needs category: ' + required_tag))
+  
+  # check link's link if it's from a popular upload site.
+  link = getLinkLink(text)
+  link_match = re.search(r'(\w+\.com)', link)
+  if link_match and link_match.groups()[0] in site_dict:
+    base_url = link_match.groups()[0]
+    link_external_site = urllib2.urlopen(link)
+    site_text = link_external_site.read()
+    link_external_site.close()
+    if site_dict[base_url] in site_text:
+      reason_list.append((2, 'Dead link.'))
+  
   if reason_list:
     return reason_list
   else:
@@ -222,9 +234,14 @@ def main():
 #  runTests(opener)
   args = sys.argv[1:]
   if not args or len(args) < 4:
-    print "usage: username password startID endID";
+    print "usage: [--no-report] username password startID endID";
     sys.exit(1)
 
+  report_links = True
+  if args[0] == "--no-report":
+    report_links = False
+    del args[0]
+    
   llUsername = str(args[0])
   llPassword = str(args[1])
   startID = int(args[2])
@@ -234,35 +251,40 @@ def main():
   if not opener:
     print "Unable to log in with provided credentials."
     sys.exit(1)
-  # define a dict of tuples - first item is a title [TAG], second item is a list of categories that should be included for all links containing the title [TAG].
-  tag_dict = dict([('[ANIME]', ['Anime', 'Uploads', 'Videos']), 
+  
+  # define a dict of tuples - first item is a title [TAG], second item is a list of categories 
+  # that should be included for all links containing the title [TAG].
+  tag_dict = dict([
+                  ('[ANIME]', ['Anime', 'Uploads', 'Videos']), 
                   ('[EBOOK]', ['Books', 'Uploads']), 
                   ('[MAGAZINE]', ['Books', 'Uploads']), 
                   ('[TEXTBOOK]', ['Books', 'Educational', 'Uploads']), 
-                  ('[XBOX360]', ['Console Games', 'Uploads']), 
-                  ('[PS3]', ['Console Games', 'Uploads']), 
-                  ('[PS2]', ['Console Games', 'Uploads']), 
-                  ('[PS1]', ['Console Games', 'Uploads']), 
-                  ('[PSP]', ['Console Games', 'Uploads']), 
-                  ('[PSX]', ['Console Games', 'Uploads']), 
-                  ('[N64]', ['Console Games', 'Uploads']), 
-                  ('[NDS]', ['Console Games', 'Uploads']), 
-                  ('[GCN]', ['Console Games', 'Uploads']), 
-                  ('[WII]', ['Console Games', 'Uploads']), 
                   ('[DREAMCAST]', ['Console Games', 'Uploads']), 
+                  ('[GCN]', ['Console Games', 'Uploads']), 
+                  ('[N64]', ['Console Games', 'Uploads']), 
+                  ('[PS1]', ['Console Games', 'Uploads']), 
+                  ('[PS2]', ['Console Games', 'Uploads']), 
+                  ('[PS3]', ['Console Games', 'Uploads']), 
+                  ('[PSX]', ['Console Games', 'Uploads']), 
+                  ('[WII]', ['Console Games', 'Uploads']), 
+                  ('[XBOX360]', ['Console Games', 'Uploads']), 
+                  ('[NDS]', ['Portable Games', 'Uploads']), 
+                  ('[PSP]', ['Portable Games', 'Uploads']), 
                   ('[PORN]', ['Porn', 'Uploads', 'Videos']), 
                   ('[GAY PORN]', ['Gay Porn', 'Uploads', 'Videos']), 
-                  ('[HENTAI]', ['Hentai', 'Uploads', 'Videos']), 
+                  ('[HENTAI]', ['Hentai', 'Uploads']), 
                   ('[MOVIE]', ['Movies', 'Uploads', 'Videos']), 
                   ('[MUSIC]', ['Music', 'Uploads']), 
                   ('[NEWS]', ['News Article', 'Text']), 
-                  ('[TV]', ['TV Shows', 'Uploads', 'Videos'])])
-  
+                  ('[TV]', ['TV Shows', 'Uploads', 'Videos'])
+                  ])
+  site_dict = dict([('megaupload.com', 'Unfortunately, the link you have clicked is not available.'), 
+                    ('mediafire.com', 'Invalid or Deleted File.')])
   for linkID in range(startID, endID):
     link_page = opener.open('https://links.endoftheinter.net/linkme.php?l='+str(linkID))
     text = link_page.read()
     link_page.close()
-    reasonList = checkLinkNeedsReporting(text, tag_dict)
+    reasonList = checkLinkNeedsReporting(text, tag_dict, site_dict)
     if reasonList:
       reportComment = ""
       lastReason = 0
@@ -272,7 +294,9 @@ def main():
         else:
           reportComment = reportComment + "\r\n" + tuple[1]
         lastReason = tuple[0]
-#      data = reportLink(opener, linkID, lastReason, reportComment)
+      if report_links:
+        data = reportLink(opener, linkID, lastReason, reportComment)
+        print "Reported",
       print "linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
     elif linkID % 100 == 0:
       print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"

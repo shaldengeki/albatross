@@ -7,7 +7,9 @@ Albatross (this iteration of it, anyways) is a Python script that monitors and r
 1. Checks for the presence of popular [TAG]s in the link title, and ensures that link categories are set appropriately
 2. Checks to see if links on popular upload sites are still active.
 
+If one of the above checks fails, Albatross will automatically report the link to be handled by a link moderator.
+
 Albatross is licensed under the WTFPL. Do what you want with it!
 
-To get started, simply install Python, download albatross, and run it as follows (on a Linux machine, at least):
-./albatross USERNAME PASSWORD START_LINKID END_LINKID
+To get started, simply install Python, download albatross, and run the following commands: (on a Linux machine, at least):
+python albatross [--no-report] USERNAME PASSWORD START_LINKID END_LINKID

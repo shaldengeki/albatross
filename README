@@ -12,4 +12,4 @@ If one of the above checks fails, Albatross will automatically report the link t
 Albatross is licensed under the WTFPL. Do what you want with it!
 
 To get started, simply install Python, download albatross, and run the following commands: (on a Linux machine, at least):
-python albatross [--no-report] USERNAME PASSWORD START_LINKID END_LINKID
+python albatross.py [--no-report] USERNAME PASSWORD START_LINKID END_LINKID

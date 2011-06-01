@@ -2,6 +2,7 @@
 # Copyright 2010 Shal Dengeki
 # Licensed under the WTF Public License, Version 2.0
 # http://sam.zoy.org/wtfpl/COPYING
+# Monitors and reports malformed links on endoftheinter.net
 
 import os
 import re
@@ -38,6 +39,9 @@ def test(got, expected):
   print '%s got: %s expected: %s' % (prefix, repr(got), repr(expected))
 
 def runTests(opener):
+  """
+  Runs tests on expected results from getLink____() functions on a preset LL link.
+  """
   link_page = opener.open('http://links.endoftheinter.net/linkme.php?l=18')
   data = link_page.read()
   link_page.close()
@@ -203,7 +207,9 @@ def checkLinkNeedsReporting(text, tag_dict, site_dict):
   """
   Checks to see if a link needs to be reported.
   Checks several things:
-  1. If there are [TAGS] in the title, checks to ensure categories are properly set for those tags.
+  1.  If there are [TAGS] in the title, checks to ensure categories are properly set for those tags.
+  2.  If there are links to sites specified by site_dict within the link description or actual link, 
+      checks those to see if they're down and if this link is tagged with the 'Uploads' category.
   Returns False if all the checks pass (or the link is deleted), a list of reasons if not.
   """
   if checkLinkDeleted(text):
@@ -221,7 +227,7 @@ def checkLinkNeedsReporting(text, tag_dict, site_dict):
         if required_tag not in categories:
           reason_list.append((3, 'Needs category: ' + required_tag))
   
-  # check link's link if it's from a popular upload site.
+  # check link's link and description to see if there are links to popular upload sites.
   link = getLinkLink(text)
   link_match = re.search(r'(\w+\.com)', link)
   if link_match and link_match.groups()[0] in site_dict:
@@ -232,6 +238,14 @@ def checkLinkNeedsReporting(text, tag_dict, site_dict):
     if site_dict[base_url] in site_text:
       reason_list.append((2, 'Dead link.'))
   
+  # if there are upload links in the link or description and this link isn't tagged as upload, flag this link to be reported.
+  description = getLinkDescription(text)
+  allText_matches = re.findall(r'(\w+\.com)', link + description)  
+  if allText_matches:
+    for base_url in allText_matches:
+      if base_url in site_dict:
+        if 'Uploads' not in categories:
+          reason_list.append((3, 'Needs category: Uploads'))
   if reason_list:
     return reason_list
   else:
@@ -239,7 +253,6 @@ def checkLinkNeedsReporting(text, tag_dict, site_dict):
 
 def main():
   
-#  runTests(opener)
   args = sys.argv[1:]
   if not args or len(args) < 4:
     print "usage: [--no-report] username password startID endID";
@@ -260,34 +273,40 @@ def main():
     print "Unable to log in with provided credentials."
     sys.exit(1)
   
-  # define a dict of tuples - first item is a title [TAG], second item is a list of categories 
+#  runTests(opener)
+
+  # dict of tuples - first item is a title [TAG], second item is a list of categories 
   # that should be included for all links containing the title [TAG].
   tag_dict = dict([
-                  ('[ANIME]', ['Anime', 'Uploads', 'Videos']), 
-                  ('[EBOOK]', ['Books', 'Uploads']), 
-                  ('[MAGAZINE]', ['Books', 'Uploads']), 
-                  ('[TEXTBOOK]', ['Books', 'Educational', 'Uploads']), 
-                  ('[DREAMCAST]', ['Console Games', 'Uploads']), 
-                  ('[GCN]', ['Console Games', 'Uploads']), 
-                  ('[N64]', ['Console Games', 'Uploads']), 
-                  ('[PS1]', ['Console Games', 'Uploads']), 
-                  ('[PS2]', ['Console Games', 'Uploads']), 
-                  ('[PS3]', ['Console Games', 'Uploads']), 
-                  ('[PSX]', ['Console Games', 'Uploads']), 
-                  ('[WII]', ['Console Games', 'Uploads']), 
-                  ('[XBOX360]', ['Console Games', 'Uploads']), 
-                  ('[NDS]', ['Portable Games', 'Uploads']), 
-                  ('[PSP]', ['Portable Games', 'Uploads']), 
-                  ('[PORN]', ['Porn', 'Uploads', 'Videos']), 
-                  ('[GAY PORN]', ['Gay Porn', 'Uploads', 'Videos']), 
-                  ('[HENTAI]', ['Hentai', 'Uploads']), 
-                  ('[MOVIE]', ['Movies', 'Uploads']), 
-                  ('[MUSIC]', ['Music', 'Uploads']), 
+                  ('[ANIME]', ['Anime', 'Videos']), 
+                  ('[EBOOK]', ['Books']), 
+                  ('[MAGAZINE]', ['Books']), 
+                  ('[TEXTBOOK]', ['Books', 'Educational']), 
+                  ('[DREAMCAST]', ['Console Games']), 
+                  ('[GCN]', ['Console Games']), 
+                  ('[N64]', ['Console Games']), 
+                  ('[PS1]', ['Console Games']), 
+                  ('[PS2]', ['Console Games']), 
+                  ('[PS3]', ['Console Games']), 
+                  ('[PSX]', ['Console Games']), 
+                  ('[WII]', ['Console Games']), 
+                  ('[XBOX360]', ['Console Games']), 
+                  ('[NDS]', ['Portable Games']), 
+                  ('[PSP]', ['Portable Games']), 
+                  ('[PORN]', ['Porn', 'Videos']), 
+                  ('[GAY PORN]', ['Gay Porn', 'Videos']), 
+                  ('[HENTAI]', ['Hentai']), 
+                  ('[MOVIE]', ['Movies']), 
+                  ('[MUSIC]', ['Music']), 
                   ('[NEWS]', ['News Article', 'Text']), 
-                  ('[TV]', ['TV Shows', 'Uploads', 'Videos'])
+                  ('[TV]', ['TV Shows', 'Videos'])
                   ])
+
+  # dict of upload sites used, with string returned if link is down.
   site_dict = dict([('megaupload.com', 'Unfortunately, the link you have clicked is not available.'), 
                     ('mediafire.com', 'Invalid or Deleted File.')])
+  
+  # now loop over all the links in this range, reporting those which have issues.
   for linkID in range(startID, endID):
     link_page = opener.open('https://links.endoftheinter.net/linkme.php?l='+str(linkID))
     text = link_page.read()
@@ -296,7 +315,6 @@ def main():
       reasonList = checkLinkNeedsReporting(text, tag_dict, site_dict)
       if reasonList:
         reportComment = ""
-        lastReason = 0
         for tuple in reasonList:
           if not reportComment:
             reportComment = tuple[1]
@@ -307,9 +325,8 @@ def main():
           data = reportLink(opener, linkID, lastReason, reportComment)
           print "Reported",
         print "linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
-      elif linkID % 100 == 0:
-        print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
-    elif linkID % 100 == 0:
+    # waiting sucks.
+    if linkID % 100 == 0:
       print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
 if __name__ == '__main__':
   main()

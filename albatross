@@ -191,6 +191,14 @@ def checkLinkDeleted(text):
   deletedMatch = re.search(r'\<em\>This link has been deleted, and is no longer available\<\/em\>', text)
   return bool(deletedMatch)
   
+def checkLinkExists(text):
+  """
+  Checks if the selected link is not deleted and is a valid link (i.e. not out-of-bounds).
+  Returns True or False to reflect if link exists.
+  """
+  invalid_match = re.search(r'\<em\>Invalid link\!\<\/em\>', text)
+  return (not invalid_match and not checkLinkDeleted(text))
+  
 def checkLinkNeedsReporting(text, tag_dict, site_dict):
   """
   Checks to see if a link needs to be reported.
@@ -273,7 +281,7 @@ def main():
                   ('[PORN]', ['Porn', 'Uploads', 'Videos']), 
                   ('[GAY PORN]', ['Gay Porn', 'Uploads', 'Videos']), 
                   ('[HENTAI]', ['Hentai', 'Uploads']), 
-                  ('[MOVIE]', ['Movies', 'Uploads', 'Videos']), 
+                  ('[MOVIE]', ['Movies', 'Uploads']), 
                   ('[MUSIC]', ['Music', 'Uploads']), 
                   ('[NEWS]', ['News Article', 'Text']), 
                   ('[TV]', ['TV Shows', 'Uploads', 'Videos'])
@@ -284,22 +292,24 @@ def main():
     link_page = opener.open('https://links.endoftheinter.net/linkme.php?l='+str(linkID))
     text = link_page.read()
     link_page.close()
-    reasonList = checkLinkNeedsReporting(text, tag_dict, site_dict)
-    if reasonList:
-      reportComment = ""
-      lastReason = 0
-      for tuple in reasonList:
-        if not reportComment:
-          reportComment = tuple[1]
-        else:
-          reportComment = reportComment + "\r\n" + tuple[1]
-        lastReason = tuple[0]
-      if report_links:
-        data = reportLink(opener, linkID, lastReason, reportComment)
-        print "Reported",
-      print "linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
+    if checkLinkExists(text):
+      reasonList = checkLinkNeedsReporting(text, tag_dict, site_dict)
+      if reasonList:
+        reportComment = ""
+        lastReason = 0
+        for tuple in reasonList:
+          if not reportComment:
+            reportComment = tuple[1]
+          else:
+            reportComment = reportComment + "\r\n" + tuple[1]
+          lastReason = tuple[0]
+        if report_links:
+          data = reportLink(opener, linkID, lastReason, reportComment)
+          print "Reported",
+        print "linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
+      elif linkID % 100 == 0:
+        print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
     elif linkID % 100 == 0:
       print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
-
 if __name__ == '__main__':
   main()

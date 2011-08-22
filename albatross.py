@@ -10,6 +10,13 @@ import sys
 import urllib
 import urllib2
 
+def printUsageAndQuit():
+  """
+  Prints usage information and exits.
+  """
+  print "usage: [--run-tests] [--report-links] username password startID endID";
+  sys.exit(1)
+
 def login(username, password):
   """
   Logs into LL using the provided username and password, returning the resultant opener.
@@ -251,30 +258,10 @@ def checkLinkNeedsReporting(text, tag_dict, site_dict):
   else:
     return False
 
-def main():
-  
-  args = sys.argv[1:]
-  if not args or len(args) < 4:
-    print "usage: [--no-report] username password startID endID";
-    sys.exit(1)
-
-  report_links = True
-  if args[0] == "--no-report":
-    report_links = False
-    del args[0]
-    
-  llUsername = str(args[0])
-  llPassword = str(args[1])
-  startID = int(args[2])
-  endID = int(args[3])
-
-  opener = login(llUsername, llPassword)
-  if not opener:
-    print "Unable to log in with provided credentials."
-    sys.exit(1)
-  
-#  runTests(opener)
-
+def reportLinks(startID, endID, opener):
+  """
+  Iterates through provided range of linkIDs, reporting those which are mis-categorized or simply down.
+  """
   # dict of tuples - first item is a title [TAG], second item is a list of categories 
   # that should be included for all links containing the title [TAG].
   tag_dict = dict([
@@ -328,5 +315,38 @@ def main():
     # waiting sucks.
     if linkID % 100 == 0:
       print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
+
+def main():
+  
+  args = sys.argv[1:]
+  if not args or len(args) < 4:
+    printUsageAndQuit()
+
+  run_tests = False
+  if args[0] == "--run-tests":
+    run_tests = True
+    del args[0]
+
+  report_links = False
+  if args[0] == "--report-links":
+    report_links = True
+    del args[0]
+    
+  llUsername = str(args[0])
+  llPassword = str(args[1])
+  startID = int(args[2])
+  endID = int(args[3])
+
+  opener = login(llUsername, llPassword)
+  if not opener:
+    print "Unable to log in with provided credentials."
+    sys.exit(1)
+  
+  if run_tests:
+    runTests(opener)
+    
+  if report_links:
+    reportLinks(startID, endID, opener)
+
 if __name__ == '__main__':
   main()

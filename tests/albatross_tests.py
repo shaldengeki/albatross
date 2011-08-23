@@ -1,5 +1,5 @@
 from nose.tools import *
-import NAME
+import albatross
 
 def setup():
   print "SETUP!"

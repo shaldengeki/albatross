@@ -4,16 +4,16 @@ except ImportError:
   from distutils.core import setup
 
 config = {
-  'description': 'My Project', 
+  'description': 'Albatross', 
   'author': 'Shal Dengeki', 
-  'url': 'URL to get it at.', 
-  'download_url': 'Where to download it.', 
+  'url': 'http://github.com/shaldengeki/albatross', 
+  'download_url': 'http://github.com/shaldengeki/albatross/tarball/master', 
   'author_email': 'shaldengeki@gmail.com', 
   'version': '0.1', 
   'install_requires': ['nose'], 
   'packages': ['NAME'], 
   'scripts': [],
-  'name': 'projectname'
+  'name': 'albatross'
 }
 
 setup(**config)

@@ -34,75 +34,6 @@ def login(username, password):
   else:
     return False
 
-def test(got, expected):
-  """ 
-  Simple provided test() function used in main() to print
-  what each function returns vs. what it's supposed to return.
-  """
-  if got == expected:
-    prefix = ' OK '
-  else:
-    prefix = '  X '
-  print '%s got: %s expected: %s' % (prefix, repr(got), repr(expected))
-
-def runTests(opener):
-  """
-  Runs tests on expected results from getLink____() functions on a preset LL link.
-  """
-  link_page = opener.open('http://links.endoftheinter.net/linkme.php?l=18')
-  data = link_page.read()
-  link_page.close()
-  print "Tests:"
-  print "getLinkTitle"
-  test(getLinkTitle(data), 'I believe you have my stapler')
-  print 
-  
-  print "getEnclosedString"
-  test(getEnclosedString(data, 'aspdfasdpofijas', 'apsdijfpasodjf'), '')  
-  test(getEnclosedString(data, '<h1>', '</h1>'), 'I believe you have my stapler')
-  print
-  
-  print "getLinkLink"
-  test(getLinkLink(data), 'http://stapler.ytmnd.com/')
-  print
-
-  print "getLinkCreator"
-  test(getLinkCreator(data), dict([('userid', '1'), ('username', 'LlamaGuy')]))
-  print
-
-  print "getLinkDate"
-  test(getLinkDate(data), '')
-  print
-  
-  print "getLinkCode"
-  test(getLinkCode(data), 'LL12')
-  print
-
-#  this doesn't work since hits changes every time we test.
-#  print "getLinkHits"
-#  test(getLinkHits(data), 24)
-#  print
-
-  print "getLinkRating"
-  test(getLinkRating(data), 8.64)
-  print
-  
-  print "getLinkVotes"
-  test(getLinkVotes(data), 1514)
-  print
-  
-  print "getLinkRank"
-  test(getLinkRank(data), 5503)
-  print
-  
-  print "getLinkCategories"
-  test(getLinkCategories(data), ['Humor', 'Pictures'])
-  print
-
-  print "getLinkDescription"
-  test(getLinkDescription(data), 'I believe you have my stapler.')
-  print
-
 def getEnclosedString(text, startString='', endString=''):
   """
   Given some text and two strings, return the string that is encapsulated by the first sequence of these two strings in order.
@@ -131,8 +62,12 @@ def getLinkCreator(text):
   """
   Given HTML of a link page, returns a dict with userid and username of user who created this link.
   """
-  creatorList = getEnclosedString(text, r'\<b\>Added by\:\<\/b\> \<a href\=\"profile\.php\?user\=', r'\<\/a\>\<br \/\>').split('">')
-  return dict([('userid', creatorList[0]), ('username', creatorList[1])])
+  creatorText = getEnclosedString(text, r'\<b\>Added by\:\<\/b\> \<a href\=\"profile\.php\?user\=', r'\<\/a\>\<br \/\>')
+  if not creatorText:
+    return False
+  else:
+    creatorList = creatorText.split('">')
+    return dict([('userid', creatorList[0]), ('username', creatorList[1])])
 
 def getLinkDate(text):
   """
@@ -150,31 +85,51 @@ def getLinkHits(text):
   """
   Given HTML of a link page, returns the number of hits on this link.
   """
-  return int(getEnclosedString(text, '<b>Hits:</b> ', r'<br />'))
+  hitText = getEnclosedString(text, '<b>Hits:</b> ', r'<br />')
+  if not hitText:
+    return False
+  else:
+    return int(hitText)
 
 def getLinkRating(text):
   """
   Given HTML of a link page, returns the rating of this link.
   """
-  return float(getEnclosedString(text, '<b>Rating:</b> ', r'/10')) 
+  ratingText = getEnclosedString(text, '<b>Rating:</b> ', r'/10')
+  if not ratingText:
+    return False
+  else:
+    return float(ratingText) 
 
 def getLinkVotes(text):
   """
   Given HTML of a link page, returns the number of votes on this link.
   """
-  return int(getEnclosedString(text, r'\/10 \(based on ', r' votes\)\<br \/\>'))
+  votesText = getEnclosedString(text, r'\/10 \(based on ', r' votes\)\<br \/\>')
+  if not votesText:
+    return False
+  else:
+    return int(votesText)
 
 def getLinkRank(text):
   """
   Given HTML of a link page, returns this link's rank.
   """
-  return int(getEnclosedString(text, r'<b>Rank:</b> ', r'<br/>')) 
+  rankText = getEnclosedString(text, r'<b>Rank:</b> ', r'<br/>')
+  if not rankText:
+    return False
+  else:
+    return int(rankText) 
 
 def getLinkCategories(text):
   """
   Given HTML of a link page, returns list of link categories.
   """
-  return getEnclosedString(text, '<b>Categories:</b> ', '<br />').split(', ')
+  categoryText = getEnclosedString(text, '<b>Categories:</b> ', '<br />')
+  if not categoryText:
+    return False
+  else:
+    return categoryText.split(', ')
 
 def getLinkDescription(text):
   """
@@ -322,11 +277,6 @@ def main():
   if not args or len(args) < 4:
     printUsageAndQuit()
 
-  run_tests = False
-  if args[0] == "--run-tests":
-    run_tests = True
-    del args[0]
-
   report_links = False
   if args[0] == "--report-links":
     report_links = True
@@ -341,9 +291,6 @@ def main():
   if not opener:
     print "Unable to log in with provided credentials."
     sys.exit(1)
-  
-  if run_tests:
-    runTests(opener)
     
   if report_links:
     reportLinks(startID, endID, opener)

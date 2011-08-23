@@ -2,6 +2,8 @@ Albatross!
 
 If you don't know what this is, chances are you don't need it.
 
+--About--
+
 Albatross (this iteration of it, anyways) is a Python script that monitors and reports malformed links on endoftheinter.net. The checks it performs (will) include:
 
 1. Checks for the presence of popular [TAG]s in the link title, and ensures that link categories are set appropriately
@@ -11,5 +13,14 @@ If one of the above checks fails, Albatross will automatically report the link t
 
 Albatross is licensed under the WTFPL. Do what you want with it!
 
+--Getting Started--
+
 To get started, simply install Python, download albatross, and run the following commands: (on a Linux machine, at least):
-python albatross.py [--no-report] USERNAME PASSWORD START_LINKID END_LINKID
+python albatross.py [--report-links] USERNAME PASSWORD START_LINKID END_LINKID
+
+--Testing--
+
+If you're interested in running the tests that come with Albatross, you'll first have to create a textfile named credentials.txt in the base project directory, with your username and password on the first line, separated by commas. So, for example, I could put:
+LlamaGuy,hunter2
+
+and when I run Albatross's tests, it'll try to log into ETI as "LlamaGuy" with the password "hunter2".

@@ -8,7 +8,7 @@ class testAlbatrossClass(object):
     openCredentialsFile.close()
     
     self.username = credentials[0]
-    self.password = credentials[1]
+    self.password = credentials[1].rstrip()
     
     opener = albatross.login(self.username, self.password)
     

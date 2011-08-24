@@ -376,7 +376,7 @@ def getTopicPage(cookieString, topicID, boardID=42, pageNum=1, archived=False, u
   topicPageHTML = response.getvalue()
   return True and topicPageHTML or False
 
-def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime=0, lastPostUnit=86400):
+def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime=0, lastPostUnit=86400, pageNum=1, topics=[]):
   """
   Searches for topics using given parameters, and returns a list of dicts of returned topics.
   Upon failure returns False.
@@ -386,7 +386,7 @@ def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhr
   else:
     subdomain = "archives"
   
-  searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID)]).replace('%2A', '*')
+  searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*')
 
   topicPage = pycurl.Curl()
   response = cStringIO.StringIO()
@@ -399,13 +399,19 @@ def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhr
   topicPage.close()
   
   topicPageHTML = response.getvalue()
+  currentPageNum = getTopicPageNum(topicPageHTML)
+  totalPageNum = getTopicNumPages(topicPageHTML)
   
-  topics = []
   topicListingHTML = getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True).split('</tr>')
   for topic in topicListingHTML:
     thisTopic = re.search(r'\<a href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(?P<title>[^<]+)\</a\>(\</span\>)?\</td\>\<td\>\<a href\=\"//endoftheinter.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]_[0-9]\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+[0-9]+\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]\_[0-9]\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', topic)
     topics.append(dict([('boardID', int(thisTopic.group('boardID'))), ('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('lastPostTime', thisTopic.group('lastPostTime'))]))
-  return True and topics or False
+
+  # if there are still more pages in the search results, then recurse.
+  if currentPageNum < totalPageNum:
+    return searchTopics(cookieString, archived=archived, boardID=boardID, allWords=allWords, exactPhrase=exactPhrase, atLeastOne=atLeastOne, without=without, numPostsMoreThan=numPostsMoreThan, numPostsCount=numPostsCount, timeCreatedWithin=timeCreatedWithin, timeCreatedTime=timeCreatedTime, timeCreatedUnit=timeCreatedUnit, lastPostWithin=lastPostWithin, lastPostTime=lastPostTime, lastPostUnit=lastPostUnit, pageNum=currentPageNum+1, topics=topics)
+  else:
+    return True and topics or False
   
 def checkTopicValid(text):
   """

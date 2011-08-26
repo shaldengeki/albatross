@@ -51,6 +51,7 @@ def login(username, password):
   loginHeaders.setopt(pycurl.HEADER, True)
   loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([('b',username), ('p', password), ('r', '')])))
   loginHeaders.setopt(pycurl.URL, 'https://endoftheinter.net/index.php')
+  loginHeaders.setopt(pycurl.USERAGENT, 'Albatross')
   loginHeaders.setopt(pycurl.WRITEFUNCTION, response.write)
   
   loginHeaders.perform()
@@ -70,7 +71,7 @@ def getEnclosedString(text, startString='', endString='', multiLine=False):
   If either string is not found or text is empty, return false.
   Multiline option makes the return possibly multi-line.
   """
-  if not len(text):
+  if not text or not len(text):
     return False
   if multiLine:
     stringMatch = re.search(startString + r'(?P<return>.+?)' + endString, text, flags=re.DOTALL)
@@ -88,15 +89,16 @@ def getPage(url, cookieString='', retries=10):
   
   for x in range(retries): # Always limit number of retries. For now just return the first request.
     response = cStringIO.StringIO()
-    loginHeaders = pycurl.Curl()
+    pageRequest = pycurl.Curl()
     
-    loginHeaders.setopt(pycurl.SSL_VERIFYPEER, False)
-    loginHeaders.setopt(pycurl.SSL_VERIFYHOST, False)
-    loginHeaders.setopt(pycurl.URL, url)
-    loginHeaders.setopt(pycurl.COOKIE, cookieString)
-    loginHeaders.setopt(pycurl.WRITEFUNCTION, response.write)
-    loginHeaders.perform()
-    loginHeaders.close()
+    pageRequest.setopt(pycurl.SSL_VERIFYPEER, False)
+    pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
+    pageRequest.setopt(pycurl.URL, url)
+    pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
+    pageRequest.setopt(pycurl.COOKIE, cookieString)
+    pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
+    pageRequest.perform()
+    pageRequest.close()
     
     response = response.getvalue()
     return response
@@ -112,6 +114,7 @@ def getLinkPage(linkID, cookieString):
   response = cStringIO.StringIO()
   linkPage.setopt(pycurl.COOKIE, cookieString)
   linkPage.setopt(pycurl.URL, 'https://links.endoftheinter.net/linkme.php?l=' + str(linkID))
+  linkPage.setopt(pycurl.USERAGENT, 'Albatross')
   linkPage.setopt(pycurl.SSL_VERIFYPEER, False)
   linkPage.setopt(pycurl.SSL_VERIFYHOST, False)
   linkPage.setopt(pycurl.WRITEFUNCTION, response.write)
@@ -388,24 +391,19 @@ def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhr
   
   searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*')
 
-  topicPage = pycurl.Curl()
-  response = cStringIO.StringIO()
-  topicPage.setopt(pycurl.COOKIE, cookieString)  
-  topicPage.setopt(pycurl.URL, 'https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search')
-  topicPage.setopt(pycurl.SSL_VERIFYPEER, False)
-  topicPage.setopt(pycurl.SSL_VERIFYHOST, False)
-  topicPage.setopt(pycurl.WRITEFUNCTION, response.write)
-  topicPage.perform()
-  topicPage.close()
-  
-  topicPageHTML = response.getvalue()
+  topicPageHTML = getPage('https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search', cookieString)  
   currentPageNum = getTopicPageNum(topicPageHTML)
   totalPageNum = getTopicNumPages(topicPageHTML)
   
-  topicListingHTML = getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True).split('</tr>')
+  topicListingHTML = getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
+  topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
+  
   for topic in topicListingHTML:
-    thisTopic = re.search(r'\<a href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(?P<title>[^<]+)\</a\>(\</span\>)?\</td\>\<td\>\<a href\=\"//endoftheinter.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]_[0-9]\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+[0-9]+\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]\_[0-9]\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', topic)
-    topics.append(dict([('boardID', int(thisTopic.group('boardID'))), ('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('lastPostTime', thisTopic.group('lastPostTime'))]))
+    thisTopic = re.search(r'\<a href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(\<b\>)?(?P<title>[^<]+)(\</b\>)?\</a\>(\</span\>)?\</td\>\<td\>\<a href\=\"//endoftheinter.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]_[0-9]\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+[0-9]+\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]\_[0-9]\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', topic)
+    if thisTopic:
+      topics.append(dict([('boardID', int(thisTopic.group('boardID'))), ('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('lastPostTime', thisTopic.group('lastPostTime'))]))
+    else:
+      return False
 
   # if there are still more pages in the search results, then recurse.
   if currentPageNum < totalPageNum:
@@ -505,7 +503,7 @@ def getLatestTopicID(text):
   """
   Takes the HTML of a topic listing and returns the largest topicID on this page.
   """
-  return sorted(re.findall(r'<tr><td><a href="//boards\.endoftheinter\.net/showmessages\.php\?board=42&amp;topic=(\d+)">', text))[-1]
+  return int(sorted(re.findall(r'<tr><td><a href="//boards\.endoftheinter\.net/showmessages\.php\?board=42&amp;topic=(\d+)">', text))[-1])
     
 def main():
   global parallelCurl

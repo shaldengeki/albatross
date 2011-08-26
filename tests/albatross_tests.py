@@ -1,5 +1,7 @@
 from nose.tools import *
 import albatross
+import pycurl
+import cStringIO
 
 class testAlbatrossClass(object):
   @classmethod
@@ -11,22 +13,26 @@ class testAlbatrossClass(object):
     klass.username = credentials[0]
     klass.password = credentials[1].rstrip()
     
-    cookieString = albatross.login(klass.username, klass.password)
+    klass.cookieString = albatross.login(klass.username, klass.password)
     
-    klass.firstLinkText = albatross.getLinkPage(18, cookieString)
-    klass.secondLinkText = albatross.getLinkPage(389813, cookieString)
-    klass.noLinkLinkText = albatross.getLinkPage(239465, cookieString)
-    klass.deletedLinkText = albatross.getLinkPage(362550, cookieString)
+    klass.firstLinkText = albatross.getLinkPage(18, klass.cookieString)
+    klass.secondLinkText = albatross.getLinkPage(389813, klass.cookieString)
+    klass.noLinkLinkText = albatross.getLinkPage(239465, klass.cookieString)
+    klass.deletedLinkText = albatross.getLinkPage(362550, klass.cookieString)
     
-    currentTopicList = albatross.getPage(url = 'http://boards.endoftheinter.net/showtopics.php?board=42', cookieString=cookieString)
+    klass.currentTopicList = albatross.getPage(url = 'https://boards.endoftheinter.net/showtopics.php?board=42', cookieString=klass.cookieString)
     
-    klass.validTopicText = albatross.getTopicPage(cookieString, albatross.getLatestTopicID(currentTopicList))
-    klass.archivedTopicText = albatross.getTopicPage(cookieString, 6240806, archived=True)
-    klass.archivedRedirectTopicText = albatross.getTopicPage(cookieString, 6240806)
-    klass.invalidTopicText = albatross.getTopicPage(cookieString, 0)
-    klass.multiPageTopicText = albatross.getTopicPage(cookieString, 6240806, pageNum=2, archived=True)
-    klass.lastPageTopicText = albatross.getTopicPage(cookieString, 6240806, pageNum=3, archived=True)
-    klass.starcraftTopicText = albatross.getTopicPage(cookieString, 6951014, boardID=5749, archived=True)
+    klass.validTopicText = albatross.getTopicPage(klass.cookieString, albatross.getLatestTopicID(klass.currentTopicList))
+    klass.archivedTopicText = albatross.getTopicPage(klass.cookieString, 6240806, archived=True)
+    klass.archivedRedirectTopicText = albatross.getTopicPage(klass.cookieString, 6240806)
+    klass.invalidTopicText = albatross.getTopicPage(klass.cookieString, 0)
+    klass.multiPageTopicText = albatross.getTopicPage(klass.cookieString, 6240806, pageNum=2, archived=True)
+    klass.lastPageTopicText = albatross.getTopicPage(klass.cookieString, 6240806, pageNum=3, archived=True)
+    klass.starcraftTopicText = albatross.getTopicPage(klass.cookieString, 6951014, boardID=5749, archived=True)
+    
+    klass.nwsTopicSearchList = albatross.getPage(url = 'https://boards.endoftheinter.net/search.php?s_aw=NWS&board=42&submit=Submit', cookieString=klass.cookieString)
+    klass.nwsTopicSearch = albatross.searchTopics(cookieString=klass.cookieString, allWords="NWS")
+    klass.emptyTopicSearch = albatross.searchTopics(cookieString=klass.cookieString, allWords="Sdfs0SSODIFHshsd7f6s9d876f9s87f6")
     
   def testLogin(self):
     assert albatross.login(self.username, self.password)
@@ -158,3 +164,12 @@ class testAlbatrossClass(object):
     assert albatross.getTopicNumPages(self.starcraftTopicText) == 1
     assert albatross.getTopicNumPages(self.multiPageTopicText) == 3
     assert albatross.getTopicNumPages(self.lastPageTopicText) == 3
+    assert isinstance(albatross.getTopicNumPages(self.nwsTopicSearchList), int) and albatross.getTopicNumPages(self.nwsTopicSearchList) > 0
+    
+  def testgetLatestTopicID(self):
+    assert isinstance(albatross.getLatestTopicID(self.currentTopicList), int) and albatross.getLatestTopicID(self.currentTopicList) > 0
+    assert isinstance(albatross.getLatestTopicID(self.nwsTopicSearchList), int) and albatross.getLatestTopicID(self.nwsTopicSearchList) > 0
+    
+  def testsearchTopics(self):
+    assert isinstance(self.nwsTopicSearch, list)
+    assert not self.emptyTopicSearch

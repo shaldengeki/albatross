@@ -207,13 +207,13 @@ def reportLink(cookieString, linkID, reason, comments):
   """
   Reports linkID for specified reason and appends comments.
   """
-#  if not cookieString or not int(linkID) or not int(reason) or not len(comments):
-#    return False
-#  params = urllib.urlencode(dict([('r', int(reason)), ('c', comments)]))
-#  report_link = opener.open('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), params)
-#  data = report_link.read()
-#  report_link.close()
-  # LL doesn't provide any feedback upon reporting a link so we have to assume that all went well.
+  if not cookieString or not int(linkID) or not int(reason) or not len(comments):
+    return False
+  params = urllib.urlencode(dict([('r', int(reason)), ('c', comments)]))
+  report_link = opener.open('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), params)
+  data = report_link.read()
+  report_link.close()
+# LL doesn't provide any feedback upon reporting a link so we have to assume that all went well.
   return True
   
 def checkLinkDeleted(text):
@@ -298,8 +298,7 @@ def checkLinkNeedsReporting(text, url, curlHandle, paramArray):
         reportComment = reportComment + "\r\n" + tuple[1]
       lastReason = tuple[0]
     if cookieString and int(linkID) and int(lastReason) and len(reportComment):
-      print "fake report."
-      # parallelCurl.startrequest('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), reportLink, [], post_fields = urllib.urlencode(dict([('r', int(lastReason)), ('c', reportComment)])))
+      parallelCurl.startrequest('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), reportLink, [], post_fields = urllib.urlencode(dict([('r', int(lastReason)), ('c', reportComment)])))
     print "Reported",
     print "linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
   # waiting sucks.
@@ -379,9 +378,23 @@ def getTopicPage(cookieString, topicID, boardID=42, pageNum=1, archived=False, u
   topicPageHTML = response.getvalue()
   return True and topicPageHTML or False
 
-def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime=0, lastPostUnit=86400, pageNum=1, topics=[]):
+def getTopicInfoFromListing(text):
   """
-  Searches for topics using given parameters, and returns a list of dicts of returned topics.
+  Returns a dict of topic attributes from a chunk of a topic list, or False if it doesn't match a topic listing regex.
+  """
+  thisTopic = re.search(r'\<a href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(\<b\>)?(?P<title>[^<]+)(\</b\>)?\</a\>(\</span\>)?\</td\>\<td\>\<a href\=\"//endoftheinter.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
+  if thisTopic:
+    newPostCount = 0
+    if thisTopic.group('newPostCount'):
+      newPostCount = int(thisTopic.group('newPostCount'))
+    return dict([('boardID', int(thisTopic.group('boardID'))), ('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('newPostCount', newPostCount), ('lastPostTime', thisTopic.group('lastPostTime'))])
+  else:
+    return False
+
+def getTopicList(cookieString, archived=False, boardID=42, pageNum=1, topics=[], recurse=False):
+  """
+  Returns a list of topic info dicts for the given board and page number.
+  By default, does not recurse through every page.
   Upon failure returns False.
   """
   if not archived:
@@ -389,25 +402,62 @@ def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhr
   else:
     subdomain = "archives"
   
-  searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*')
-
-  topicPageHTML = getPage('https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search', cookieString)  
-  currentPageNum = getTopicPageNum(topicPageHTML)
+  # assemble the search query and request this search page's topic listing.
+  searchQuery = urllib.urlencode([('board', boardID), ('page', pageNum)])
+  topicPageHTML = getPage('https://' + subdomain + '.endoftheinter.net/showtopics.php?' + searchQuery, cookieString)
+  
+  # get the total page number.
   totalPageNum = getTopicNumPages(topicPageHTML)
   
+  # split the topic listing string into a list so that one topic is in each element.
   topicListingHTML = getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
   topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
   
   for topic in topicListingHTML:
-    thisTopic = re.search(r'\<a href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(\<b\>)?(?P<title>[^<]+)(\</b\>)?\</a\>(\</span\>)?\</td\>\<td\>\<a href\=\"//endoftheinter.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]_[0-9]\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+[0-9]+\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]\_[0-9]\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', topic)
-    if thisTopic:
-      topics.append(dict([('boardID', int(thisTopic.group('boardID'))), ('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('lastPostTime', thisTopic.group('lastPostTime'))]))
+    topicInfo = getTopicInfoFromListing(topic)
+    if topicInfo:
+      topics.append(topicInfo)
     else:
       return False
 
-  # if there are still more pages in the search results, then recurse.
-  if currentPageNum < totalPageNum:
-    return searchTopics(cookieString, archived=archived, boardID=boardID, allWords=allWords, exactPhrase=exactPhrase, atLeastOne=atLeastOne, without=without, numPostsMoreThan=numPostsMoreThan, numPostsCount=numPostsCount, timeCreatedWithin=timeCreatedWithin, timeCreatedTime=timeCreatedTime, timeCreatedUnit=timeCreatedUnit, lastPostWithin=lastPostWithin, lastPostTime=lastPostTime, lastPostUnit=lastPostUnit, pageNum=currentPageNum+1, topics=topics)
+  # if there are still more pages in the search results and user has not specified otherwise, then recurse.
+  if pageNum < totalPageNum and recurse:
+    return getTopicList(cookieString, archived=archived, boardID=boardID, pageNum=pageNum+1, topics=topics, recurse=True)
+  else:
+    return True and topics or False
+ 
+def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime=0, lastPostUnit=86400, pageNum=1, topics=[], recurse=True):
+  """
+  Searches for topics using given parameters, and returns a list of dicts of returned topics.
+  By default, recursively iterates through every page of search results.
+  Upon failure returns False.
+  """
+  if not archived:
+    subdomain = "boards"
+  else:
+    subdomain = "archives"
+  
+  # assemble the search query and request this search page's topic listing.
+  searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*')
+  topicPageHTML = getPage('https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search', cookieString)
+  
+  # get the total page number.
+  totalPageNum = getTopicNumPages(topicPageHTML)
+
+  # split the topic listing string into a list so that one topic is in each element.
+  topicListingHTML = getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
+  topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
+  
+  for topic in topicListingHTML:
+    topicInfo = getTopicInfoFromListing(topic)
+    if topicInfo:
+      topics.append(topicInfo)
+    else:
+      return False
+
+  # if there are still more pages in the search results and user has not specified otherwise, then recurse.
+  if pageNum < totalPageNum and recurse:
+    return searchTopics(cookieString, archived=archived, boardID=boardID, allWords=allWords, exactPhrase=exactPhrase, atLeastOne=atLeastOne, without=without, numPostsMoreThan=numPostsMoreThan, numPostsCount=numPostsCount, timeCreatedWithin=timeCreatedWithin, timeCreatedTime=timeCreatedTime, timeCreatedUnit=timeCreatedUnit, lastPostWithin=lastPostWithin, lastPostTime=lastPostTime, lastPostUnit=lastPostUnit, pageNum=pageNum+1, topics=topics)
   else:
     return True and topics or False
   
@@ -502,8 +552,13 @@ def getTopicPosts(text):
 def getLatestTopicID(text):
   """
   Takes the HTML of a topic listing and returns the largest topicID on this page.
+  Returns False if no topicIDs on this page.
   """
-  return int(sorted(re.findall(r'<tr><td><a href="//boards\.endoftheinter\.net/showmessages\.php\?board=42&amp;topic=(\d+)">', text))[-1])
+  sortedTopicIDs = sorted(re.findall(r'<tr><td><a href="//boards\.endoftheinter\.net/showmessages\.php\?board=42&amp;topic=(\d+)">', text))
+  if sortedTopicIDs and len(sortedTopicIDs) > 0:
+    return int(sortedTopicIDs[-1])
+  else:
+    return False
     
 def main():
   global parallelCurl

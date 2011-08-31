@@ -6,6 +6,7 @@ import cStringIO
 class testAlbatrossClass(object):
   @classmethod
   def setUpClass(klass):
+    # reads ETI login credentials from credentials.txt in the current directory.
     openCredentialsFile = open('credentials.txt')
     credentials = openCredentialsFile.readlines()[0].split(',')
     openCredentialsFile.close()
@@ -14,15 +15,18 @@ class testAlbatrossClass(object):
     klass.password = credentials[1].rstrip()
     
     klass.cookieString = albatross.login(klass.username, klass.password)
+
     
+    # link page HTML for link tests.
     klass.firstLinkText = albatross.getLinkPage(18, klass.cookieString)
     klass.secondLinkText = albatross.getLinkPage(389813, klass.cookieString)
     klass.noLinkLinkText = albatross.getLinkPage(239465, klass.cookieString)
     klass.deletedLinkText = albatross.getLinkPage(362550, klass.cookieString)
     
-    klass.currentTopicList = albatross.getPage(url = 'https://boards.endoftheinter.net/showtopics.php?board=42', cookieString=klass.cookieString)
+    # topic page and content HTML for topic tests.
+    klass.currentTopicListPage = albatross.getPage(url = 'https://boards.endoftheinter.net/showtopics.php?board=42', cookieString=klass.cookieString)
     
-    klass.validTopicText = albatross.getTopicPage(klass.cookieString, albatross.getLatestTopicID(klass.currentTopicList))
+    klass.validTopicText = albatross.getTopicPage(klass.cookieString, albatross.getLatestTopicID(klass.currentTopicListPage))
     klass.archivedTopicText = albatross.getTopicPage(klass.cookieString, 6240806, archived=True)
     klass.archivedRedirectTopicText = albatross.getTopicPage(klass.cookieString, 6240806)
     klass.invalidTopicText = albatross.getTopicPage(klass.cookieString, 0)
@@ -31,8 +35,13 @@ class testAlbatrossClass(object):
     klass.starcraftTopicText = albatross.getTopicPage(klass.cookieString, 6951014, boardID=5749, archived=True)
     
     klass.nwsTopicSearchList = albatross.getPage(url = 'https://boards.endoftheinter.net/search.php?s_aw=NWS&board=42&submit=Submit', cookieString=klass.cookieString)
+    klass.emptyTopicSearchList = albatross.getPage(url = 'https://boards.endoftheinter.net/search.php?s_aw=Sdfs0SSODIFHshsd7f6s9d876f9s87f6&board=42&submit=Submit', cookieString=klass.cookieString)
+
     klass.nwsTopicSearch = albatross.searchTopics(cookieString=klass.cookieString, allWords="NWS")
     klass.emptyTopicSearch = albatross.searchTopics(cookieString=klass.cookieString, allWords="Sdfs0SSODIFHshsd7f6s9d876f9s87f6")
+
+    klass.emptyTopicList = albatross.getTopicList(cookieString=klass.cookieString, archived=False, boardID=-152, pageNum=1, topics=[], recurse=False)
+    klass.currentTopicList = albatross.getTopicList(cookieString=klass.cookieString, archived=False, boardID=42, pageNum=1, topics=[], recurse=False)
     
   def testLogin(self):
     assert albatross.login(self.username, self.password)
@@ -167,9 +176,19 @@ class testAlbatrossClass(object):
     assert isinstance(albatross.getTopicNumPages(self.nwsTopicSearchList), int) and albatross.getTopicNumPages(self.nwsTopicSearchList) > 0
     
   def testgetLatestTopicID(self):
-    assert isinstance(albatross.getLatestTopicID(self.currentTopicList), int) and albatross.getLatestTopicID(self.currentTopicList) > 0
+    assert not albatross.getLatestTopicID(self.emptyTopicSearchList)
+    assert isinstance(albatross.getLatestTopicID(self.currentTopicListPage), int) and albatross.getLatestTopicID(self.currentTopicListPage) > 0
     assert isinstance(albatross.getLatestTopicID(self.nwsTopicSearchList), int) and albatross.getLatestTopicID(self.nwsTopicSearchList) > 0
     
+  def testgetTopicInfoFromListing(self):
+    assert not albatross.getTopicInfoFromListing(self.emptyTopicSearchList)
+    assert isinstance(albatross.getTopicInfoFromListing(self.currentTopicListPage), dict) and len(albatross.getTopicInfoFromListing(self.currentTopicListPage)) > 0
+    assert isinstance(albatross.getTopicInfoFromListing(self.nwsTopicSearchList), dict) and len(albatross.getTopicInfoFromListing(self.nwsTopicSearchList)) > 0
+    
+  def testgetTopicList(self):
+    assert not self.emptyTopicList
+    assert isinstance(self.currentTopicList, list) and len(self.currentTopicList) > 0
+    
   def testsearchTopics(self):
-    assert isinstance(self.nwsTopicSearch, list)
     assert not self.emptyTopicSearch
+    assert isinstance(self.nwsTopicSearch, list)

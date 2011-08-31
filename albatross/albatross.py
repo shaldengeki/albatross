@@ -368,6 +368,7 @@ def getTopicPage(cookieString, topicID, boardID=42, pageNum=1, archived=False, u
   topicPage = pycurl.Curl()
   response = cStringIO.StringIO()
   topicPage.setopt(pycurl.COOKIE, cookieString)  
+  topicPage.setopt(pycurl.USERAGENT, 'Albatross')
   topicPage.setopt(pycurl.URL, 'https://' + subdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum))
   topicPage.setopt(pycurl.SSL_VERIFYPEER, False)
   topicPage.setopt(pycurl.SSL_VERIFYHOST, False)

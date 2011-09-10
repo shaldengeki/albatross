@@ -65,7 +65,7 @@ def login(username, password):
   cookieString = parseCookieHeader(cookieHeader)
   return cookieString
 
-def getEnclosedString(text, startString='', endString='', multiLine=False):
+def getEnclosedString(text, startString='', endString='', multiLine=False, greedy=False):
   """
   Given some text and two strings, return the string that is encapsulated by the first sequence of these two strings in order.
   If either string is not found or text is empty, return false.
@@ -73,14 +73,23 @@ def getEnclosedString(text, startString='', endString='', multiLine=False):
   """
   if not text or not len(text):
     return False
+  flags=False
   if multiLine:
-    stringMatch = re.search(startString + r'(?P<return>.+?)' + endString, text, flags=re.DOTALL)
-  else:
-    stringMatch = re.search(startString + r'(?P<return>.+?)' + endString, text)  
+    flags=re.DOTALL
+  greedyPart="?"
+  if greedy:
+    greedyPart=""    
+  stringMatch = re.search(startString + r'(?P<return>.+' + greedyPart + r')' + endString, text, flags=flags)
   if not stringMatch:
     return False
   return stringMatch.group('return')
 
+def returnPageHTML(text, url, curlHandle, paramArray):
+  """
+  Takes the result of a pyparallelcurl request and appends it in its entirety to paramArray.
+  """
+  paramArray.append(text)
+  
 def getPage(url, cookieString='', retries=10):
   """
   Uses cURL to read a page.
@@ -202,17 +211,73 @@ def getLinkDescription(text):
   Given HTML of a link page, returns the link description.
   """
   return getEnclosedString(text, '<b>Description:</b>\s+', '  <br /><br />')
+  
+def getLinkCommentID(text):
+  """
+  Given HTML of a link comment, returns the comment ID.
+  """
+  return int(getEnclosedString(text, '<a href="/message\.php\?id\=', '\&amp\;topic'))
+
+def appendLinkPageComments(text, url, curlHandle, paramArray):
+  """
+  Takes the HTML of a link comment listing as fed in by pyparallelcurl and appends the comments contained within to the list of comments in paramArray.
+  """
+  linkID = paramArray[0]
+  comments = paramArray[1]
+  
+  if not text:
+    return False
+  # parse this page and append comments to comment list.
+  thisPageComments = getPagePosts(text)
+  for comment in thisPageComments:
+    comments.append(dict([("linkID",int(linkID)), ("commentID", getLinkCommentID(comment)), ("username",getPostUsername(comment)), ("userID",getPostUserID(comment)), ("date",getPostDateUnix(comment)), ("text",getPostText(comment))]))
+
+def getLinkPageParallel(parallelCurl, linkID, pageNum=1):
+  """
+  Returns a link page's HTML using parallelCurl.
+  """
+  linkPageHTML = []
+  parallelCurl.startrequest('https://links.endoftheinter.net/linkme.php?l=' + str(linkID) + '&page=' + str(pageNum), returnPageHTML, linkPageHTML)
+  parallelCurl.finishallrequests()
+  return linkPageHTML[0]
+  
+def getLinkCommentsParallel(parallelCurl, linkID, linkNumPages=False):
+  """
+  Given a linkID, return a list of comment dicts in this topic.
+  Performs operation in parallel.
+  """
+  comments = []
+  if not linkNumPages:
+    # get the first page of this link to obtain a range of pages.
+    firstPageHTML = getLinkPageParallel(parallelCurl=parallelCurl, linkID=linkID, pageNum=1)
+    if not firstPageHTML:
+      return False
+    linkNumPages = getTopicNumPages(firstPageHTML)
+    # parse this page and initialize comment list to the first page of comments.
+    firstPageComments = getPagePosts(firstPageHTML)
+    for comment in firstPageComments:
+      comments.append(dict([("linkID",int(linkID)), ("commentID", getLinkCommentID(comment)), ("username",getPostUsername(comment)), ("userID",getPostUserID(comment)), ("date",getPostDateUnix(comment)), ("text",getPostText(comment))]))
+    startPageNum = 2
+  else:
+    startPageNum = 1
+  # now loop over all the other pages (if there are any)
+  for pageNum in range(startPageNum, int(linkNumPages)+1):
+    parallelCurl.startrequest('https://links.endoftheinter.net/linkme.php?l=' + str(linkID) + '&page=' + str(pageNum), appendLinkPageComments, [linkID, comments])
+  parallelCurl.finishallrequests()
+
+  # finally, return the post list.
+  return sorted(comments, key=lambda comment: comment['commentID'])
 
 def reportLink(cookieString, linkID, reason, comments):
   """
   Reports linkID for specified reason and appends comments.
   """
-  if not cookieString or not int(linkID) or not int(reason) or not len(comments):
-    return False
-  params = urllib.urlencode(dict([('r', int(reason)), ('c', comments)]))
-  report_link = opener.open('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), params)
-  data = report_link.read()
-  report_link.close()
+#  if not cookieString or not int(linkID) or not int(reason) or not len(comments):
+#    return False
+#  params = urllib.urlencode(dict([('r', int(reason)), ('c', comments)]))
+#  report_link = opener.open('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), params)
+#  data = report_link.read()
+#  report_link.close()
 # LL doesn't provide any feedback upon reporting a link so we have to assume that all went well.
   return True
   
@@ -272,6 +337,8 @@ def checkLinkNeedsReporting(text, url, curlHandle, paramArray):
   if link:
     link_match = re.search(r'(\w+\.com)', link)
     if link_match and link_match.groups()[0] in site_dict:
+      if 'Uploads' not in categories:
+        reasonList.append((3, 'Needs category: Uploads'))
       base_url = link_match.groups()[0]
       link_external_site = urllib2.urlopen(link)
       site_text = link_external_site.read()
@@ -299,8 +366,7 @@ def checkLinkNeedsReporting(text, url, curlHandle, paramArray):
       lastReason = tuple[0]
     if cookieString and int(linkID) and int(lastReason) and len(reportComment):
       parallelCurl.startrequest('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), reportLink, [], post_fields = urllib.urlencode(dict([('r', int(lastReason)), ('c', reportComment)])))
-    print "Reported",
-    print "linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
+      print "Reported linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
   # waiting sucks.
   if linkID % 100 == 0:
     print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
@@ -309,6 +375,8 @@ def reportLinks(startID, endID, num_concurrent_requests, cookieString):
   """
   Iterates through provided range of linkIDs, reporting those which are mis-categorized or simply down.
   """
+  global parallelCurl
+  
   # dict of tuples - first item is a title [TAG], second item is a list of categories 
   # that should be included for all links containing the title [TAG].
   
@@ -379,6 +447,95 @@ def getTopicPage(cookieString, topicID, boardID=42, pageNum=1, archived=False, u
   topicPageHTML = response.getvalue()
   return True and topicPageHTML or False
 
+def getTopicPageParallel(parallelCurl, topicID, boardID=42, pageNum=1, archived=False, userID=""):
+  """
+  Returns a topic page's HTML using parallelCurl.
+  """
+  if archived:
+    topicSubdomain = "archives"
+  else:
+    topicSubdomain = "boards"
+  
+  topicPageHTML = []
+  parallelCurl.startrequest('https://' + topicSubdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum), returnPageHTML, topicPageHTML)
+  parallelCurl.finishallrequests()
+  return topicPageHTML[0]
+  
+def getTopicPosts(cookieString, topicID, boardID=42, archived=False):
+  """
+  Given a topicID and boardID (and whether or not it's in the archives), return a list of post dicts in this topic.
+  """
+  # get the first page of this topic to obtain a range of pages.
+  firstPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=1, archived=archived)
+  if not firstPageHTML:
+    return False
+  topicNumPages = getTopicNumPages(firstPageHTML)
+  # parse this page and initialize post list to the first page of posts.
+  posts = []
+  firstPagePosts = getPagePosts(firstPageHTML)
+  for post in firstPagePosts:
+    posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
+  
+  # now loop over all the other pages (if there are any)
+  for pageNum in range(2, topicNumPages+1):
+    thisPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=pageNum, archived=archived)
+    if not thisPageHTML:
+      return False
+    # parse this page and append posts to post list.
+    thisPagePosts = getPagePosts(thisPageHTML)
+    for post in thisPagePosts:
+      posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
+  
+  # finally, return the post list.
+  return posts
+
+def appendTopicPagePosts(text, url, curlHandle, paramArray):
+  """
+  Takes the HTML of a topic message listing as fed in by pyparallelcurl and appends the posts contained within to the list of posts in paramArray.
+  """
+  topicID = paramArray[0]
+  boardID = paramArray[1]
+  posts = paramArray[2]
+  
+  if not text:
+    return False
+  # parse this page and append posts to post list.
+  thisPagePosts = getPagePosts(text)
+  for post in thisPagePosts:
+    posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
+
+def getTopicPostsParallel(parallelCurl, topicID, boardID=42, archived=False, topicNumPages=False):
+  """
+  Given a topicID and boardID (and whether or not it's in the archives), return a list of post dicts in this topic.
+  Performs operation in parallel.
+  """
+  if archived:
+    topicSubdomain = "archives"
+  else:
+    topicSubdomain = "boards"
+  
+  posts = []
+  if not topicNumPages:
+    # get the first page of this topic to obtain a range of pages.
+    firstPageHTML = getTopicPageParallel(parallelCurl=parallelCurl, topicID=topicID, boardID=boardID, pageNum=1, archived=archived)
+    if not firstPageHTML:
+      return False
+    topicNumPages = getTopicNumPages(firstPageHTML)
+    # parse this page and initialize post list to the first page of posts.
+    firstPagePosts = getPagePosts(firstPageHTML)
+    for post in firstPagePosts:
+      posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
+    startPageNum = 2
+  else:
+    startPageNum = 1
+  # now loop over all the other pages (if there are any)
+  for pageNum in range(startPageNum, int(topicNumPages)+1):
+    parallelCurl.startrequest('https://' + topicSubdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&page=' + str(pageNum), appendTopicPagePosts, [topicID, boardID, posts])
+  parallelCurl.finishallrequests()
+
+  # finally, return the post list.
+  return sorted(posts, key=lambda post: post['postID'])
+  
 def getTopicInfoFromListing(text):
   """
   Returns a dict of topic attributes from a chunk of a topic list, or False if it doesn't match a topic listing regex.
@@ -530,7 +687,7 @@ def getPostText(text):
   """
   Given HTML of a post, return post text stripped of sig or False if not found.
   """  
-  return True and (True and getEnclosedString(text, r' class="message">', r'---<br />', multiLine=True) or getEnclosedString(text, r' class="message">', r'</td>', multiLine=True)) or False
+  return True and (True and getEnclosedString(text, r' class="message">', r'---<br />', multiLine=True, greedy=True) or getEnclosedString(text, r' class="message">', r'</td>', multiLine=True, greedy=True)) or False
 
 def getTopicPageNum(text):
   """
@@ -544,11 +701,11 @@ def getTopicNumPages(text):
   """
   return True and int(getEnclosedString(text, r'">(First Page</a> \| )?(<a href)?(\S+)?(Previous Page</a> \| )?Page \d+ of <span>', r'</span>')) or False
   
-def getTopicPosts(text):
+def getPagePosts(text):
   """
-  Takes the HTML of one page of a topic and returns a list of the posts on said page.
+  Takes the HTML of one page of a topic or link and returns a list containing the HTML for one post in each element on said page.
   """
-  return text.split('</div></td></tr></table></div>')[:-1]
+  return text.split('</td></tr></table></div>')[:-1]
   
 def getLatestTopicID(text):
   """

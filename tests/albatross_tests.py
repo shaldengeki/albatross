@@ -1,7 +1,5 @@
 from nose.tools import *
 import albatross
-import pycurl
-import cStringIO
 
 class testAlbatrossClass(object):
   @classmethod
@@ -16,7 +14,6 @@ class testAlbatrossClass(object):
     
     klass.cookieString = albatross.login(klass.username, klass.password)
 
-    
     # link page HTML for link tests.
     klass.firstLinkText = albatross.getLinkPage(18, klass.cookieString)
     klass.secondLinkText = albatross.getLinkPage(389813, klass.cookieString)
@@ -158,9 +155,9 @@ class testAlbatrossClass(object):
 
   def testgetPostText(self):
     assert not albatross.getPostText(self.archivedRedirectTopicText)
-    assert albatross.getPostText(self.starcraftTopicText) == 'and does that figure in to who you get matched up against on ladder<br />\n'
-    assert albatross.getPostText(self.archivedTopicText) == 'I think Moltar and I are the only ones. <br />\n'
-    assert albatross.getPostText(self.lastPageTopicText) == '<div class="quoted-message" msgid="t,6240806,67881334@0"><div class="message-top">From: <a href="//endoftheinter.net/profile.php?user=4438">shaunMD</a> | Posted: 4/16/2010 11:56:39 AM</div>I\'m sorry Kiffe, let\'s kiss and make up.</div><br />\nI am so flambuoyantly gay.<br />\n'
+    assert albatross.getPostText(albatross.getPagePosts(self.starcraftTopicText)[0]) == 'and does that figure in to who you get matched up against on ladder<br />\n'
+    assert albatross.getPostText(albatross.getPagePosts(self.archivedTopicText)[0]) == 'I think Moltar and I are the only ones. <br />\n'
+    assert albatross.getPostText(albatross.getPagePosts(self.lastPageTopicText)[0]) == '<div class="quoted-message" msgid="t,6240806,67881334@0"><div class="message-top">From: <a href="//endoftheinter.net/profile.php?user=4438">shaunMD</a> | Posted: 4/16/2010 11:56:39 AM</div>I\'m sorry Kiffe, let\'s kiss and make up.</div><br />\nI am so flambuoyantly gay.<br />\n'
 
   def testgetTopicPageNum(self):
     assert not albatross.getTopicPageNum(self.archivedRedirectTopicText)

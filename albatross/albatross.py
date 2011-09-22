@@ -162,6 +162,15 @@ def getLinkDate(text):
   """
   return getEnclosedString(text, '<b>Date:</b> ', '<br />')
   
+def getLinkDateUnix(text):
+  """
+  Given HTML of a link page, return the UNIX timestamp it was added.
+  """
+  if getLinkDate(text):
+    return True and int(time.mktime(datetime.datetime.strptime(getLinkDate(text), "%m/%d/%Y %I:%M:%S %p").timetuple())) or False
+  else:
+    return False
+
 def getLinkCode(text):
   """
   Given HTML of a link page, returns the link code.
@@ -210,7 +219,7 @@ def getLinkDescription(text):
   """
   Given HTML of a link page, returns the link description.
   """
-  return getEnclosedString(text, '<b>Description:</b>\s+', '  <br /><br />')
+  return getEnclosedString(text, '<b>Description:</b>\s+', '  <br /><br />', multiLine=True)
   
 def getLinkCommentID(text):
   """
@@ -218,6 +227,15 @@ def getLinkCommentID(text):
   """
   return int(getEnclosedString(text, '<a href="/message\.php\?id\=', '\&amp\;topic'))
 
+def getMaxLinkID(parallelCurl):
+  """
+  Returns the int value of the maximum link ID on ETI.
+  """
+  linkListPageHTML = []
+  parallelCurl.startrequest('https://links.endoftheinter.net/links.php?mode=new', returnPageHTML, linkListPageHTML)
+  parallelCurl.finishallrequests()
+  return int(getEnclosedString(linkListPageHTML[0], r'\<td\>\<a href\=\"linkme\.php\?l\=', r'\"\>'))
+  
 def appendLinkPageComments(text, url, curlHandle, paramArray):
   """
   Takes the HTML of a link comment listing as fed in by pyparallelcurl and appends the comments contained within to the list of comments in paramArray.
@@ -228,7 +246,7 @@ def appendLinkPageComments(text, url, curlHandle, paramArray):
   if not text:
     return False
   # parse this page and append comments to comment list.
-  thisPageComments = getPagePosts(text)
+  thisPageComments = getPagePosts(text)[:-1]
   for comment in thisPageComments:
     comments.append(dict([("linkID",int(linkID)), ("commentID", getLinkCommentID(comment)), ("username",getPostUsername(comment)), ("userID",getPostUserID(comment)), ("date",getPostDateUnix(comment)), ("text",getPostText(comment))]))
 
@@ -254,7 +272,7 @@ def getLinkCommentsParallel(parallelCurl, linkID, linkNumPages=False):
       return False
     linkNumPages = getTopicNumPages(firstPageHTML)
     # parse this page and initialize comment list to the first page of comments.
-    firstPageComments = getPagePosts(firstPageHTML)
+    firstPageComments = getPagePosts(firstPageHTML)[:-1]
     for comment in firstPageComments:
       comments.append(dict([("linkID",int(linkID)), ("commentID", getLinkCommentID(comment)), ("username",getPostUsername(comment)), ("userID",getPostUserID(comment)), ("date",getPostDateUnix(comment)), ("text",getPostText(comment))]))
     startPageNum = 2
@@ -268,6 +286,16 @@ def getLinkCommentsParallel(parallelCurl, linkID, linkNumPages=False):
   # finally, return the post list.
   return sorted(comments, key=lambda comment: comment['commentID'])
 
+def getLinkDict(parallelCurl, linkID):
+  """
+  Takes a parallelCurl object and a requested linkID, and returns a dict containing the link's information.
+  """
+  linkPageHTML = getLinkPageParallel(parallelCurl, linkID)
+  if not linkPageHTML:
+    return False
+  linkNumPages = getTopicNumPages(linkPageHTML)
+  return {"linkid":int(linkID), "title":str(getLinkTitle(linkPageHTML)), "link":str(getLinkLink(linkPageHTML)), "creator":getLinkCreator(linkPageHTML), "date":int(getLinkDateUnix(linkPageHTML)), "code":str(getLinkCode(linkPageHTML)), "hits":int(getLinkHits(linkPageHTML)), "rating":float(getLinkRating(linkPageHTML)), "votes":int(getLinkVotes(linkPageHTML)), "rank":int(getLinkRank(linkPageHTML)), "categories":getLinkCategories(linkPageHTML), "description":str(getLinkDescription(linkPageHTML)), "comments":getLinkCommentsParallel(parallelCurl=parallelCurl,linkID=linkID,linkNumPages=linkNumPages)}
+  
 def reportLink(cookieString, linkID, reason, comments):
   """
   Reports linkID for specified reason and appends comments.

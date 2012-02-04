@@ -13,12 +13,16 @@ class testAlbatrossClass(object):
     klass.password = credentials[1].rstrip()
     
     klass.cookieString = albatross.login(klass.username, klass.password)
+    
+    # main page HTML for getEnclosedString test.
+    klass.mainPageText = albatross.getPage(url='https://endoftheinter.net/main.php', cookieString=klass.cookieString)
 
     # link page HTML for link tests.
     klass.firstLinkText = albatross.getLinkPage(18, klass.cookieString)
     klass.secondLinkText = albatross.getLinkPage(389813, klass.cookieString)
     klass.noLinkLinkText = albatross.getLinkPage(239465, klass.cookieString)
     klass.deletedLinkText = albatross.getLinkPage(362550, klass.cookieString)
+    klass.invalidLinkText = albatross.getLinkPage(-1, klass.cookieString)
     
     # topic page and content HTML for topic tests.
     klass.currentTopicListPage = albatross.getPage(url = 'https://boards.endoftheinter.net/showtopics.php?board=42', cookieString=klass.cookieString)
@@ -43,9 +47,13 @@ class testAlbatrossClass(object):
   def testLogin(self):
     assert albatross.login(self.username, self.password)
 
+  def testcheckLoggedIn(self):
+    assert albatross.checkLoggedIn(albatross.login(self.username, self.password))
+    assert not albatross.checkLoggedIn('FAKE COOKIESTRING')
+    
   def testgetEnclosedString(self):
-    assert not albatross.getEnclosedString(self.firstLinkText, 'aspdfasdpofijas', 'aspdfasdpofijas')
-    assert albatross.getEnclosedString(self.firstLinkText, '<h1>', '</h1>') == 'I believe you have my stapler'    
+    assert not albatross.getEnclosedString(self.mainPageText, 'aspdfasdpofijas', 'aspdfasdpofijas')
+    assert albatross.getEnclosedString(self.mainPageText, '<h1>', '</h1>') == 'End of the Internet'    
   
   def testgetLinkTitle(self):
     assert albatross.getLinkTitle(self.firstLinkText) == 'I believe you have my stapler'
@@ -65,6 +73,10 @@ class testAlbatrossClass(object):
     assert not albatross.getLinkDate(self.firstLinkText)
     assert albatross.getLinkDate(self.secondLinkText) == '8/23/2011 10:40:27 AM'
     assert not albatross.getLinkDate(self.deletedLinkText)
+  
+  def testgetLinkDateUnix(self):
+    assert not albatross.getLinkDateUnix(self.firstLinkText)
+    assert isinstance(albatross.getLinkDateUnix(self.secondLinkText), int) and albatross.getLinkDateUnix(self.secondLinkText) == 1314114027
   
   def testgetLinkCode(self):
     assert albatross.getLinkCode(self.firstLinkText) == 'LL12'
@@ -93,6 +105,15 @@ class testAlbatrossClass(object):
   def testgetLinkDescription(self):
     assert albatross.getLinkDescription(self.firstLinkText) == 'I believe you have my stapler.'
     assert not albatross.getLinkDescription(self.deletedLinkText)
+    
+  def testcheckLinkDeleted(self):
+    assert albatross.checkLinkDeleted(self.deletedLinkText)
+    assert not albatross.checkLinkDeleted(self.firstLinkText)
+    
+  def testcheckLinkExists(self):
+    assert not albatross.checkLinkExists(self.deletedLinkText)
+    assert not albatross.checkLinkExists(self.invalidLinkText)
+    assert albatross.checkLinkExists(self.firstLinkText)
     
   def testcheckTopicValid(self):
     assert albatross.checkTopicValid(self.validTopicText)

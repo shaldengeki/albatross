@@ -82,7 +82,7 @@ def getEnclosedString(text, startString='', endString='', multiLine=False, greed
   stringMatch = re.search(startString + r'(?P<return>.+' + greedyPart + r')' + endString, text, flags=flags)
   if not stringMatch:
     return False
-  return stringMatch.group('return')
+  return unicode(stringMatch.group('return'), encoding='latin-1').encode('utf-8')
 
 def returnPageHTML(text, url, curlHandle, paramArray):
   """
@@ -114,7 +114,19 @@ def getPage(url, cookieString='', retries=10):
     
   return False
   
-def getLinkPage(linkID, cookieString):
+def checkLoggedIn(cookieString):
+  """
+  Checks if the current cookie string is still valid.
+  Returns boolean value reflecting this.
+  """
+  
+  mainPageHTML = getPage('http://endoftheinter.net/main.php', cookieString)
+  if "End of the Internet - Home" not in mainPageHTML:
+    return False
+  else:
+    return True
+  
+def getLinkPage(linkID, cookieString, pageNum=1):
   """
   Grabs a link's page, given its linkID and a cookie string, and returns the HTML.
   Upon failure returns False.
@@ -122,7 +134,7 @@ def getLinkPage(linkID, cookieString):
   linkPage = pycurl.Curl()
   response = cStringIO.StringIO()
   linkPage.setopt(pycurl.COOKIE, cookieString)
-  linkPage.setopt(pycurl.URL, 'https://links.endoftheinter.net/linkme.php?l=' + str(linkID))
+  linkPage.setopt(pycurl.URL, 'https://links.endoftheinter.net/linkme.php?l=' + str(linkID) + '&page=' + str(pageNum))
   linkPage.setopt(pycurl.USERAGENT, 'Albatross')
   linkPage.setopt(pycurl.SSL_VERIFYPEER, False)
   linkPage.setopt(pycurl.SSL_VERIFYHOST, False)
@@ -259,6 +271,27 @@ def getLinkPageParallel(parallelCurl, linkID, pageNum=1):
   parallelCurl.finishallrequests()
   return linkPageHTML[0]
   
+def getLinkComments(linkID, cookieString, linkNumPages=False, pageNum=1):
+  """
+  Given a linkID and a cookie string, return a list of comment dicts in this topic.
+  """
+  comments = []
+  firstPageHTML = getLinkPage(linkID=linkID, cookieString=cookieString, pageNum=pageNum)
+  if not firstPageHTML:
+    return False
+  if not linkNumPages:
+    # get the first page of this link to obtain a range of pages.
+    linkNumPages = getTopicNumPages(firstPageHTML)
+  
+  # parse this page and initialize comment list to the first page of comments.
+  firstPageComments = getPagePosts(firstPageHTML)[:-1]
+  for comment in firstPageComments:
+    comments.append(dict([("linkID",int(linkID)), ("commentID", getLinkCommentID(comment)), ("username",getPostUsername(comment)), ("userID",getPostUserID(comment)), ("date",getPostDateUnix(comment)), ("text",getPostText(comment))]))
+  
+  # now recurse over all the other pages (if there are any)
+  if pageNum < linkNumPages:
+    return comments.append(getLinkComments(linkID, pageNum=pageNum+1))
+
 def getLinkCommentsParallel(parallelCurl, linkID, linkNumPages=False):
   """
   Given a linkID, return a list of comment dicts in this topic.
@@ -286,7 +319,7 @@ def getLinkCommentsParallel(parallelCurl, linkID, linkNumPages=False):
   # finally, return the post list.
   return sorted(comments, key=lambda comment: comment['commentID'])
 
-def getLinkDict(parallelCurl, linkID):
+def getLinkDictParallel(parallelCurl, linkID):
   """
   Takes a parallelCurl object and a requested linkID, and returns a dict containing the link's information.
   """
@@ -295,6 +328,35 @@ def getLinkDict(parallelCurl, linkID):
     return False
   linkNumPages = getTopicNumPages(linkPageHTML)
   return {"linkid":int(linkID), "title":str(getLinkTitle(linkPageHTML)), "link":str(getLinkLink(linkPageHTML)), "creator":getLinkCreator(linkPageHTML), "date":int(getLinkDateUnix(linkPageHTML)), "code":str(getLinkCode(linkPageHTML)), "hits":int(getLinkHits(linkPageHTML)), "rating":float(getLinkRating(linkPageHTML)), "votes":int(getLinkVotes(linkPageHTML)), "rank":int(getLinkRank(linkPageHTML)), "categories":getLinkCategories(linkPageHTML), "description":str(getLinkDescription(linkPageHTML)), "comments":getLinkCommentsParallel(parallelCurl=parallelCurl,linkID=linkID,linkNumPages=linkNumPages)}
+  
+def getLinkDict(cookieString, linkID):
+  """
+  Takes a cookie string and a requested linkID, and returns a dict containing the link's information.
+  """
+  linkPageHTML = getLinkPage(linkID, cookieString)
+  if not linkPageHTML:
+    return False
+  linkNumPages = getTopicNumPages(linkPageHTML)
+  return {"linkid":int(linkID), "title":str(getLinkTitle(linkPageHTML)), "link":str(getLinkLink(linkPageHTML)), "creator":getLinkCreator(linkPageHTML), "date":int(getLinkDateUnix(linkPageHTML)), "code":str(getLinkCode(linkPageHTML)), "hits":int(getLinkHits(linkPageHTML)), "rating":float(getLinkRating(linkPageHTML)), "votes":int(getLinkVotes(linkPageHTML)), "rank":int(getLinkRank(linkPageHTML)), "categories":getLinkCategories(linkPageHTML), "description":str(getLinkDescription(linkPageHTML)), "comments":getLinkComments(linkID=linkID,cookieString=cookieString,linkNumPages=linkNumPages)}
+
+def getLinkListingDicts(text):
+  """
+  Given the HTML of a link listing page, returns a list of dicts with all the available information for each of the links listed.
+  """
+  newLinksHTML = text.split('<tr class="r')[1:]
+  linkListingDicts = []
+  for linkRow in newLinksHTML:
+    singleLinkRows = linkRow.split('<td>')[1:]
+    linkID = int(getEnclosedString(singleLinkRows[0], '\<a\ href\=\"linkme\.php\?l\=', '\"\>'))
+    linkTitle = getEnclosedString(singleLinkRows[0], '\<a\ href\=\"linkme\.php\?l\=' + str(linkID) + '\"\>', '\<\/a\>\<\/td\>')
+    linkDate = int(time.mktime(datetime.datetime.strptime(getEnclosedString(singleLinkRows[1], '', '\<\/td\>'), "%m/%d/%Y %H:%M").timetuple()))
+    linkUserID = int(getEnclosedString(singleLinkRows[2], '\<a\ href\=\"profile\.php\?user\=', '\"\>'))
+    linkUsername = getEnclosedString(singleLinkRows[2], '\<a\ href\=\"profile\.php\?user\=' + str(linkUserID) + '\"\>', '\<\/a\>\<\/td\>')
+    linkVoteNum = int(getEnclosedString(singleLinkRows[3], '\(based\ on\ ', '\ votes\)\<\/td\>'))
+    linkRating = float(getEnclosedString(singleLinkRows[3], '', '\/10'))
+    linkRank = int(getEnclosedString(singleLinkRows[4], '', '\<\/td\>'))
+    linkListingDicts.append(dict([('linkID', linkID), ('title', linkTitle), ('creator', dict([('userid', linkUserID), ('username', linkUsername)])), ('date', linkDate), ('rating', linkRating), ('votes', linkVoteNum), ('rank', linkRank)]))
+  return linkListingDicts
   
 def reportLink(cookieString, linkID, reason, comments):
   """
@@ -399,6 +461,15 @@ def checkLinkNeedsReporting(text, url, curlHandle, paramArray):
   if linkID % 100 == 0:
     print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
 
+def getNewLinks(cookieString, recurse=True):
+  """
+  Returns a list of dicts for the newest links on links.php?mode=new.
+  """
+  newLinksPage = getPage('http://links.endoftheinter.net/links.php?mode=new', cookieString)
+  if not newLinksPage:
+    return False
+  return getLinkListingDicts(newLinksPage)
+  
 def reportLinks(startID, endID, num_concurrent_requests, cookieString):
   """
   Iterates through provided range of linkIDs, reporting those which are mis-categorized or simply down.
@@ -489,12 +560,12 @@ def getTopicPageParallel(parallelCurl, topicID, boardID=42, pageNum=1, archived=
   parallelCurl.finishallrequests()
   return topicPageHTML[0]
   
-def getTopicPosts(cookieString, topicID, boardID=42, archived=False):
+def getTopicPosts(cookieString, topicID, boardID=42, archived=False, userID=""):
   """
   Given a topicID and boardID (and whether or not it's in the archives), return a list of post dicts in this topic.
   """
   # get the first page of this topic to obtain a range of pages.
-  firstPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=1, archived=archived)
+  firstPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=1, archived=archived, userID=userID)
   if not firstPageHTML:
     return False
   topicNumPages = getTopicNumPages(firstPageHTML)
@@ -502,17 +573,19 @@ def getTopicPosts(cookieString, topicID, boardID=42, archived=False):
   posts = []
   firstPagePosts = getPagePosts(firstPageHTML)
   for post in firstPagePosts:
-    posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
+    if getPostUserID(post):
+      posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
   
   # now loop over all the other pages (if there are any)
   for pageNum in range(2, topicNumPages+1):
-    thisPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=pageNum, archived=archived)
+    thisPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=pageNum, archived=archived, userID=userID)
     if not thisPageHTML:
       return False
     # parse this page and append posts to post list.
     thisPagePosts = getPagePosts(thisPageHTML)
     for post in thisPagePosts:
-      posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
+      if getPostUserID(post):
+        posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
   
   # finally, return the post list.
   return posts
@@ -564,16 +637,25 @@ def getTopicPostsParallel(parallelCurl, topicID, boardID=42, archived=False, top
   # finally, return the post list.
   return sorted(posts, key=lambda post: post['postID'])
   
+def getTopicDateUnix(text):
+  """
+  Given a string representation of a topic's date, returns the unix timestamp of said topic date.
+  """
+  return True and int(time.mktime(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M").timetuple())) or False
+  
 def getTopicInfoFromListing(text):
   """
   Returns a dict of topic attributes from a chunk of a topic list, or False if it doesn't match a topic listing regex.
   """
-  thisTopic = re.search(r'\<a href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(\<b\>)?(?P<title>[^<]+)(\</b\>)?\</a\>(\</span\>)?\</td\>\<td\>\<a href\=\"//endoftheinter.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
+  thisTopic = re.search(r'((?P<closed><span class\=\"closed\"\>))?\<a href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(\<b\>)?(?P<title>[^<]+)(\</b\>)?\</a\>(\</span\>)?\</td\>\<td\>\<a href\=\"//endoftheinter.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
   if thisTopic:
     newPostCount = 0
     if thisTopic.group('newPostCount'):
       newPostCount = int(thisTopic.group('newPostCount'))
-    return dict([('boardID', int(thisTopic.group('boardID'))), ('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('newPostCount', newPostCount), ('lastPostTime', thisTopic.group('lastPostTime'))])
+    closedTopic = False
+    if thisTopic.group('closed'):
+      closedTopic = True
+    return dict([('boardID', int(thisTopic.group('boardID'))), ('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('newPostCount', newPostCount), ('lastPostTime', thisTopic.group('lastPostTime')), ('closed', closedTopic)])
   else:
     return False
 
@@ -624,7 +706,7 @@ def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhr
     subdomain = "archives"
   
   # assemble the search query and request this search page's topic listing.
-  searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*')
+  searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*').replace('%27', '"')
   topicPageHTML = getPage('https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search', cookieString)
   
   # get the total page number.

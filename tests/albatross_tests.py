@@ -27,7 +27,8 @@ class testAlbatrossClass(object):
     # topic page and content HTML for topic tests.
     klass.currentTopicListPage = albatross.getPage(url = 'https://boards.endoftheinter.net/showtopics.php?board=42', cookieString=klass.cookieString)
     
-    klass.validTopicText = albatross.getTopicPage(klass.cookieString, albatross.getLatestTopicID(klass.currentTopicListPage))
+    klass.validTopicID = albatross.getLatestTopicID(klass.currentTopicListPage)
+    klass.validTopicText = albatross.getTopicPage(klass.cookieString, klass.validTopicID)
     klass.archivedTopicText = albatross.getTopicPage(klass.cookieString, 6240806, archived=True)
     klass.archivedRedirectTopicText = albatross.getTopicPage(klass.cookieString, 6240806)
     klass.invalidTopicText = albatross.getTopicPage(klass.cookieString, 0)
@@ -38,8 +39,8 @@ class testAlbatrossClass(object):
     klass.nwsTopicSearchList = albatross.getPage(url = 'https://boards.endoftheinter.net/search.php?s_aw=NWS&board=42&submit=Submit', cookieString=klass.cookieString)
     klass.emptyTopicSearchList = albatross.getPage(url = 'https://boards.endoftheinter.net/search.php?s_aw=Sdfs0SSODIFHshsd7f6s9d876f9s87f6&board=42&submit=Submit', cookieString=klass.cookieString)
 
-    klass.nwsTopicSearch = albatross.searchTopics(cookieString=klass.cookieString, allWords="NWS")
-    klass.emptyTopicSearch = albatross.searchTopics(cookieString=klass.cookieString, allWords="Sdfs0SSODIFHshsd7f6s9d876f9s87f6")
+    klass.nwsTopicSearch = albatross.searchTopics(cookieString=klass.cookieString, allWords="NWS", topics=[])
+    klass.emptyTopicSearch = albatross.searchTopics(cookieString=klass.cookieString, allWords="Sdfs0SSODIFHshsd7f6s9d876f9s87f6", topics=[])
 
     klass.emptyTopicList = albatross.getTopicList(cookieString=klass.cookieString, archived=False, boardID=-152, pageNum=1, topics=[], recurse=False)
     klass.currentTopicList = albatross.getTopicList(cookieString=klass.cookieString, archived=False, boardID=42, pageNum=1, topics=[], recurse=False)

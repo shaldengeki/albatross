@@ -54,8 +54,11 @@ def login(username, password):
   loginHeaders.setopt(pycurl.USERAGENT, 'Albatross')
   loginHeaders.setopt(pycurl.WRITEFUNCTION, response.write)
   
-  loginHeaders.perform()
-  loginHeaders.close()
+  try:
+    loginHeaders.perform()
+    loginHeaders.close()
+  except:
+    return False
   
   cookieHeader = response.getvalue()
   
@@ -106,12 +109,13 @@ def getPage(url, cookieString='', retries=10):
     pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
     pageRequest.setopt(pycurl.COOKIE, cookieString)
     pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
-    pageRequest.perform()
-    pageRequest.close()
-    
-    response = response.getvalue()
-    return response
-    
+    try:
+      pageRequest.perform()
+      pageRequest.close()
+      response = response.getvalue()
+      return response
+    except:
+      continue    
   return False
   
 def checkLoggedIn(cookieString):
@@ -139,8 +143,11 @@ def getLinkPage(linkID, cookieString, pageNum=1):
   linkPage.setopt(pycurl.SSL_VERIFYPEER, False)
   linkPage.setopt(pycurl.SSL_VERIFYHOST, False)
   linkPage.setopt(pycurl.WRITEFUNCTION, response.write)
-  linkPage.perform()
-  linkPage.close()
+  try:
+    linkPage.perform()
+    linkPage.close()
+  except:
+    return False
   
   linkPageHTML = response.getvalue()
   return True and linkPageHTML or False
@@ -540,8 +547,11 @@ def getTopicPage(cookieString, topicID, boardID=42, pageNum=1, archived=False, u
   topicPage.setopt(pycurl.SSL_VERIFYPEER, False)
   topicPage.setopt(pycurl.SSL_VERIFYHOST, False)
   topicPage.setopt(pycurl.WRITEFUNCTION, response.write)
-  topicPage.perform()
-  topicPage.close()
+  try:
+    topicPage.perform()
+    topicPage.close()
+  except:
+    return False
   
   topicPageHTML = response.getvalue()
   return True and topicPageHTML or False
@@ -647,7 +657,7 @@ def getTopicInfoFromListing(text):
   """
   Returns a dict of topic attributes from a chunk of a topic list, or False if it doesn't match a topic listing regex.
   """
-  thisTopic = re.search(r'((?P<closed><span class\=\"closed\"\>))?\<a href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(\<b\>)?(?P<title>[^<]+)(\</b\>)?\</a\>(\</span\>)?\</td\>\<td\>\<a href\=\"//endoftheinter.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
+  thisTopic = re.search(r'((?P<closed><span class\=\"closed\"\>))?\<a\ href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(\<div\ class\=\"sticky\"\>)?(?P<title>[^<]+)(\</div\>)?\</a\>(\</span\>)?\</td\>\<td\>\<a\ href\=\"//endoftheinter\.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
   if thisTopic:
     newPostCount = 0
     if thisTopic.group('newPostCount'):
@@ -687,7 +697,6 @@ def getTopicList(cookieString, archived=False, boardID=42, pageNum=1, topics=[],
       topics.append(topicInfo)
     else:
       return False
-
   # if there are still more pages in the search results and user has not specified otherwise, then recurse.
   if pageNum < totalPageNum and recurse:
     return getTopicList(cookieString, archived=archived, boardID=boardID, pageNum=pageNum+1, topics=topics, recurse=True)
@@ -715,7 +724,7 @@ def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhr
   # split the topic listing string into a list so that one topic is in each element.
   topicListingHTML = getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
   topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
-  
+
   for topic in topicListingHTML:
     topicInfo = getTopicInfoFromListing(topic)
     if topicInfo:
@@ -734,7 +743,7 @@ def checkTopicValid(text):
   Given the HTML of a topic page, checks to ensure that the topic exists and that we can read it.
   """
   #return not bool(re.search(r'<em>Invalid topic.</em>', text)) and not bool(re.search(r'<h1>500 - Internal Server Error</h1>', text)) and not bool(re.search(r'<em>You are not authorized to view messages on this board.</em>', text))
-  return bool(re.search(r'<h2>',text))
+  return bool(re.search(r'Page\ 1\ of\ ',text))
 
 def checkArchivedTopic(text):
   """
@@ -822,7 +831,7 @@ def getLatestTopicID(text):
   Takes the HTML of a topic listing and returns the largest topicID on this page.
   Returns False if no topicIDs on this page.
   """
-  sortedTopicIDs = sorted(re.findall(r'<tr><td><a href="//boards\.endoftheinter\.net/showmessages\.php\?board=42&amp;topic=(\d+)">', text))
+  sortedTopicIDs = sorted(re.findall(r'<td><a href="//boards\.endoftheinter\.net/showmessages\.php\?board=42&amp;topic=(\d+)">', text))
   if sortedTopicIDs and len(sortedTopicIDs) > 0:
     return int(sortedTopicIDs[-1])
   else:

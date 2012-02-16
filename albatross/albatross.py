@@ -657,7 +657,7 @@ def getTopicInfoFromListing(text):
   """
   Returns a dict of topic attributes from a chunk of a topic list, or False if it doesn't match a topic listing regex.
   """
-  thisTopic = re.search(r'((?P<closed><span class\=\"closed\"\>))?\<a\ href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(\<div\ class\=\"sticky\"\>)?(?P<title>[^<]+)(\</div\>)?\</a\>(\</span\>)?\</td\>\<td\>\<a\ href\=\"//endoftheinter\.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
+  thisTopic = re.search(r'((?P<closed><span class\=\"closed\"\>))?\<a\ href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(<b>)?(?P<title>[^<]+)(</b>)?\</a\>(</span>)?\</td\>\<td\>\<a\ href\=\"//endoftheinter\.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
   if thisTopic:
     newPostCount = 0
     if thisTopic.group('newPostCount'):
@@ -688,7 +688,7 @@ def getTopicList(cookieString, archived=False, boardID=42, pageNum=1, topics=[],
   totalPageNum = getTopicNumPages(topicPageHTML)
   
   # split the topic listing string into a list so that one topic is in each element.
-  topicListingHTML = getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
+  topicListingHTML = getEnclosedString(topicPageHTML, '<th>Last\ Post</th></tr>', '</tr></table>', multiLine=True)
   topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
   
   for topic in topicListingHTML:
@@ -703,7 +703,7 @@ def getTopicList(cookieString, archived=False, boardID=42, pageNum=1, topics=[],
   else:
     return True and topics or False
  
-def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime=0, lastPostUnit=86400, pageNum=1, topics=[], recurse=True):
+def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime='', lastPostUnit=86400, pageNum=1, topics=[], recurse=True):
   """
   Searches for topics using given parameters, and returns a list of dicts of returned topics.
   By default, recursively iterates through every page of search results.

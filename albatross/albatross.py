@@ -28,7 +28,7 @@ def parseCookieHeader(string):
   Given a cookie response header returned by pyCurl, return an array of cookie key/values.
   """
   
-  string_array = string.split("\r\n")
+  string_array = str(string).split("\r\n")
   cookieList = []
   for line in string_array:
     if line.startswith("Set-Cookie:"):
@@ -49,7 +49,7 @@ def login(username, password):
   loginHeaders.setopt(pycurl.SSL_VERIFYHOST, False)
   loginHeaders.setopt(pycurl.POST, 1)
   loginHeaders.setopt(pycurl.HEADER, True)
-  loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([('b',username), ('p', password), ('r', '')])))
+  loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([('b',str(username)), ('p', str(password)), ('r', '')])))
   loginHeaders.setopt(pycurl.URL, 'https://endoftheinter.net/index.php')
   loginHeaders.setopt(pycurl.USERAGENT, 'Albatross')
   loginHeaders.setopt(pycurl.WRITEFUNCTION, response.write)
@@ -82,7 +82,7 @@ def getEnclosedString(text, startString='', endString='', multiLine=False, greed
   greedyPart="?"
   if greedy:
     greedyPart=""    
-  stringMatch = re.search(startString + r'(?P<return>.+' + greedyPart + r')' + endString, text, flags=flags)
+  stringMatch = re.search(str(startString) + r'(?P<return>.+' + greedyPart + r')' + str(endString), text, flags=flags)
   if not stringMatch:
     return False
   return unicode(stringMatch.group('return'), encoding='latin-1').encode('utf-8')
@@ -107,7 +107,7 @@ def getPage(url, cookieString='', retries=10):
     pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
     pageRequest.setopt(pycurl.URL, url)
     pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
-    pageRequest.setopt(pycurl.COOKIE, cookieString)
+    pageRequest.setopt(pycurl.COOKIE, str(cookieString))
     pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
     try:
       pageRequest.perform()
@@ -137,7 +137,7 @@ def getLinkPage(linkID, cookieString, pageNum=1):
   """
   linkPage = pycurl.Curl()
   response = cStringIO.StringIO()
-  linkPage.setopt(pycurl.COOKIE, cookieString)
+  linkPage.setopt(pycurl.COOKIE, str(cookieString))
   linkPage.setopt(pycurl.URL, 'https://links.endoftheinter.net/linkme.php?l=' + str(linkID) + '&page=' + str(pageNum))
   linkPage.setopt(pycurl.USERAGENT, 'Albatross')
   linkPage.setopt(pycurl.SSL_VERIFYPEER, False)
@@ -541,7 +541,7 @@ def getTopicPage(cookieString, topicID, boardID=42, pageNum=1, archived=False, u
   
   topicPage = pycurl.Curl()
   response = cStringIO.StringIO()
-  topicPage.setopt(pycurl.COOKIE, cookieString)  
+  topicPage.setopt(pycurl.COOKIE, str(cookieString))  
   topicPage.setopt(pycurl.USERAGENT, 'Albatross')
   topicPage.setopt(pycurl.URL, 'https://' + subdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum))
   topicPage.setopt(pycurl.SSL_VERIFYPEER, False)

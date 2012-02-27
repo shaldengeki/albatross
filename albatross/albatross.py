@@ -570,12 +570,12 @@ def getTopicPageParallel(parallelCurl, topicID, boardID=42, pageNum=1, archived=
   parallelCurl.finishallrequests()
   return topicPageHTML[0]
   
-def getTopicPosts(cookieString, topicID, boardID=42, archived=False, userID=""):
+def getTopicPosts(cookieString, topicID, boardID=42, archived=False, userID="", startPageNum=1):
   """
   Given a topicID and boardID (and whether or not it's in the archives), return a list of post dicts in this topic.
   """
   # get the first page of this topic to obtain a range of pages.
-  firstPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=1, archived=archived, userID=userID)
+  firstPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=startPageNum, archived=archived, userID=userID)
   if not firstPageHTML:
     return False
   topicNumPages = getTopicNumPages(firstPageHTML)
@@ -587,7 +587,7 @@ def getTopicPosts(cookieString, topicID, boardID=42, archived=False, userID=""):
       posts.append(dict([("postID",getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",getPostUsername(post)), ("userID",getPostUserID(post)), ("date",getPostDateUnix(post)), ("text",getPostText(post))]))
   
   # now loop over all the other pages (if there are any)
-  for pageNum in range(2, topicNumPages+1):
+  for pageNum in range(1+startPageNum, topicNumPages+1):
     thisPageHTML = getTopicPage(cookieString=cookieString, topicID=topicID, boardID=boardID, pageNum=pageNum, archived=archived, userID=userID)
     if not thisPageHTML:
       return False

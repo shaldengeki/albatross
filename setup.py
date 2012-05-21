@@ -9,8 +9,8 @@ config = {
   'url': 'http://github.com/shaldengeki/albatross', 
   'download_url': 'http://github.com/shaldengeki/albatross/tarball/master', 
   'author_email': 'shaldengeki@gmail.com', 
-  'version': '0.1', 
-  'install_requires': ['nose'], 
+  'version': '1.0', 
+  'install_requires': ['nose', 'pycurl'], 
   'packages': ['albatross'], 
   'scripts': [],
   'name': 'albatross'

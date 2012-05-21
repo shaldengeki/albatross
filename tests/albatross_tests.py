@@ -11,7 +11,7 @@ class testAlbatrossClass(object):
     
     klass.username = credentials[0]
     klass.password = credentials[1].rstrip()
-    klass.etiConn = albatross.Albatross(klass.username, klass.password)
+    klass.etiConn = albatross.Albatross(username=klass.username, password=klass.password)
     
     # main page HTML for getEnclosedString test.
     klass.mainPageText = klass.etiConn.getPage(url='https://endoftheinter.net/main.php')
@@ -25,7 +25,7 @@ class testAlbatrossClass(object):
     
     # topic page and content HTML for topic tests.
     klass.currentTopicListPage = klass.etiConn.getPage(url = 'https://boards.endoftheinter.net/showtopics.php?board=42')
-    
+
     klass.validTopicID = klass.etiConn.getLatestTopicID(klass.currentTopicListPage)
     klass.validTopicText = klass.etiConn.getTopicPage(klass.validTopicID)
     klass.archivedTopicText = klass.etiConn.getTopicPage(6240806, archived=True)
@@ -43,8 +43,10 @@ class testAlbatrossClass(object):
 
     klass.emptyTopicList = klass.etiConn.getTopicList(archived=False, boardID=-152, pageNum=1, topics=[], recurse=False)
     klass.currentTopicList = klass.etiConn.getTopicList(archived=False, boardID=42, pageNum=1, topics=[], recurse=False)
+    klass.archivedTopicList = klass.etiConn.getTopicList(archived=True, boardID=42, pageNum=1, topics=[], recurse=True)
     
   def testLogin(self):
+    assert not self.etiConn.login("FAKE USERNAME", "FAKE PASSWORD")
     assert self.etiConn.login(self.username, self.password)
 
   def testcheckLoggedIn(self):
@@ -57,6 +59,7 @@ class testAlbatrossClass(object):
   def testgetEnclosedString(self):
     assert not self.etiConn.getEnclosedString(self.mainPageText, 'aspdfasdpofijas', 'aspdfasdpofijas')
     assert self.etiConn.getEnclosedString(self.mainPageText, '<h1>', '</h1>') == 'End of the Internet'    
+    assert not self.etiConn.getEnclosedString("", "<h1>", "</h1>")
   # fuck llamaguy
   # def testgetLinkTitle(self):
     # assert albatross.getLinkTitle(self.firstLinkText) == 'I believe you have my stapler'
@@ -146,7 +149,11 @@ class testAlbatrossClass(object):
     assert self.etiConn.getTopicID(self.multiPageTopicText) == 6240806
     assert self.etiConn.getTopicID(self.lastPageTopicText) == 6240806
     assert self.etiConn.getTopicID(self.starcraftTopicText) == 6951014
-
+    
+  def testgetTopicTitle(self):
+    assert self.etiConn.getTopicTitle(self.starcraftTopicText)
+    assert not self.etiConn.getTopicTitle(self.invalidTopicText)
+    
   def testgetPostID(self):
     assert not self.etiConn.getPostID(self.archivedRedirectTopicText)
     assert self.etiConn.getPostID(self.starcraftTopicText) == 81909003
@@ -195,11 +202,21 @@ class testAlbatrossClass(object):
     assert self.etiConn.getTopicNumPages(self.multiPageTopicText) == 3
     assert self.etiConn.getTopicNumPages(self.lastPageTopicText) == 3
     assert isinstance(self.etiConn.getTopicNumPages(self.nwsTopicSearchList), int) and self.etiConn.getTopicNumPages(self.nwsTopicSearchList) > 0
+  
+  def testgetTopicPosts(self):
+    assert not self.etiConn.getTopicPosts(0)
+    assert not self.etiConn.getTopicPosts(7896062, archived=True)
+    assert len(self.etiConn.getTopicPosts(self.validTopicID)) > 0
     
   def testgetLatestTopicID(self):
     assert not self.etiConn.getLatestTopicID(self.emptyTopicSearchList)
     assert isinstance(self.etiConn.getLatestTopicID(self.currentTopicListPage), int) and self.etiConn.getLatestTopicID(self.currentTopicListPage) > 0
     assert isinstance(self.etiConn.getLatestTopicID(self.nwsTopicSearchList), int) and self.etiConn.getLatestTopicID(self.nwsTopicSearchList) > 0
+    
+  def testgetTopicDateUnix(self):
+    assert not self.etiConn.getTopicDateUnix("")
+    assert not self.etiConn.getTopicDateUnix("11 suckit 99")
+    assert self.etiConn.getTopicDateUnix(self.etiConn.getTopicInfoFromListing(self.currentTopicListPage)['lastPostTime'])
     
   def testgetTopicInfoFromListing(self):
     assert not self.etiConn.getTopicInfoFromListing(self.emptyTopicSearchList)
@@ -209,6 +226,7 @@ class testAlbatrossClass(object):
   def testgetTopicList(self):
     assert not self.emptyTopicList
     assert isinstance(self.currentTopicList, list) and len(self.currentTopicList) > 0
+    assert isinstance(self.archivedTopicList, list) and len(self.archivedTopicList) > 0
     
   def testsearchTopics(self):
     assert not self.emptyTopicSearch

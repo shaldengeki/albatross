@@ -31,7 +31,7 @@ class Albatross(object):
     elif cookieString:
       self.cookieString = cookieString
     if not self.cookieString or not self.checkLoggedIn():
-      print "Unable to log in."
+      print "Warning: invalid credentials provided."
     curl_options = {
       pycurl.SSL_VERIFYPEER: False,
       pycurl.SSL_VERIFYHOST: False,
@@ -236,7 +236,10 @@ class Albatross(object):
     Given HTML of a link page, return the UNIX timestamp it was added.
     """
     if self.getLinkDate(text):
-      return True and int(time.mktime(datetime.datetime.strptime(self.getLinkDate(text), "%m/%d/%Y %I:%M:%S %p").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+      try:
+        return True and int(time.mktime(datetime.datetime.strptime(self.getLinkDate(text), "%m/%d/%Y %I:%M:%S %p").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+      except ValueError:
+        return False
     else:
       return False
 
@@ -581,9 +584,9 @@ class Albatross(object):
     if not topicNumPages:
       # get the first page of this topic to obtain a range of pages.
       firstPageHTML = self.getTopicPage(topicID=topicID, boardID=boardID, pageNum=1, archived=archived)
-      if not firstPageHTML:
-        return False
       topicNumPages = self.getTopicNumPages(firstPageHTML)
+      if not firstPageHTML or not topicNumPages:
+        return False
       # parse this page and initialize post list to the first page of posts.
       firstPagePosts = self.getPagePosts(firstPageHTML)
       for post in firstPagePosts:
@@ -603,8 +606,11 @@ class Albatross(object):
     """
     Given a string representation of a topic's date, returns the unix timestamp of said topic date.
     """
-    return True and int(time.mktime(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
-    
+    try:
+      return True and int(time.mktime(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+    except ValueError:
+      # provided string does not match our expected format.
+      return False
   def getTopicInfoFromListing(self, text):
     """
     Returns a dict of topic attributes from a chunk of a topic list, or False if it doesn't match a topic listing regex.

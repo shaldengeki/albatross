@@ -4,7 +4,6 @@
 # http://sam.zoy.org/wtfpl/COPYING
 # Provides link- and board-scraping functions for ETI.
 
-import os
 import re
 import sys
 import urllib
@@ -15,13 +14,12 @@ import pytz
 import pycurl
 import pyparallelcurl
 import cStringIO
-from xml.etree import ElementTree
 
 def printUsageAndQuit():
   """
   Prints usage information and exits.
   """
-  print "usage: [--report-links] [--num-requests n] username password startID endID";
+  print "usage: [--report-links] [--num-requests n] username password startID endID"
   sys.exit(1)
 
 class Albatross(object):
@@ -33,7 +31,7 @@ class Albatross(object):
     elif cookieString:
       self.cookieString = cookieString
     if not self.cookieString or not self.checkLoggedIn():
-      return False
+      print "Unable to log in."
     curl_options = {
       pycurl.SSL_VERIFYPEER: False,
       pycurl.SSL_VERIFYHOST: False,
@@ -85,6 +83,14 @@ class Albatross(object):
 
     cookieString = self.parseCookieHeader(cookieHeader)
     self.cookieString = cookieString
+    curl_options = {
+      pycurl.SSL_VERIFYPEER: False,
+      pycurl.SSL_VERIFYHOST: False,
+      pycurl.FOLLOWLOCATION: True, 
+      pycurl.COOKIE: self.cookieString
+    }
+    self.parallelCurl = pyparallelcurl.ParallelCurl(20, curl_options)
+    
     return cookieString
   
   def getEnclosedString(self, text, startString='', endString='', multiLine=False, greedy=False):

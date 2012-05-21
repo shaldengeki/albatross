@@ -126,6 +126,7 @@ class testAlbatrossClass(object):
     assert not albatross.checkArchivedTopic(self.archivedRedirectTopicText)
     
   def testcheckArchivedRedirect(self):
+    print self.cookieString
     assert albatross.checkArchivedRedirect(self.archivedRedirectTopicText)
     assert not albatross.checkArchivedRedirect(self.archivedTopicText)
     assert not albatross.checkArchivedRedirect(self.validTopicText)

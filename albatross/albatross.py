@@ -11,6 +11,7 @@ import urllib
 import urllib2
 import time
 import datetime
+import pytz
 import pycurl
 import pyparallelcurl
 import cStringIO
@@ -93,13 +94,38 @@ def returnPageHTML(text, url, curlHandle, paramArray):
   """
   paramArray.append(text)
   
+def getPageHeader(url, cookieString='', retries=10):
+  """
+  Uses cURL to read a page's headers.
+  """
+  for x in range(retries): # Always limit number of retries. For now just return the first request.
+    response = cStringIO.StringIO()
+    pageRequest = pycurl.Curl()
+    
+    pageRequest.setopt(pycurl.NOBODY, True)
+    pageRequest.setopt(pycurl.HEADER, True)
+    pageRequest.setopt(pycurl.SSL_VERIFYPEER, False)
+    pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
+    pageRequest.setopt(pycurl.URL, url)
+    pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
+    pageRequest.setopt(pycurl.COOKIE, str(cookieString))
+    pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
+    try:
+      pageRequest.perform()
+      pageRequest.close()
+      response = response.getvalue()
+      return response
+    except:
+      continue    
+  return False  
+
 def getPage(url, cookieString='', retries=10):
   """
   Uses cURL to read a page.
   Retries up to retries times before returning an error.
   """
   
-  for x in range(retries): # Always limit number of retries. For now just return the first request.
+  for x in range(retries): # Limit the number of retries.
     response = cStringIO.StringIO()
     pageRequest = pycurl.Curl()
     
@@ -125,7 +151,7 @@ def checkLoggedIn(cookieString):
   """
   
   mainPageHTML = getPage('http://endoftheinter.net/main.php', cookieString)
-  if "End of the Internet - Home" not in mainPageHTML:
+  if not mainPageHTML or "End of the Internet - Home" not in mainPageHTML:
     return False
   else:
     return True
@@ -186,7 +212,7 @@ def getLinkDateUnix(text):
   Given HTML of a link page, return the UNIX timestamp it was added.
   """
   if getLinkDate(text):
-    return True and int(time.mktime(datetime.datetime.strptime(getLinkDate(text), "%m/%d/%Y %I:%M:%S %p").timetuple())) or False
+    return True and int(time.mktime(datetime.datetime.strptime(getLinkDate(text), "%m/%d/%Y %I:%M:%S %p").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
   else:
     return False
 
@@ -356,7 +382,7 @@ def getLinkListingDicts(text):
     singleLinkRows = linkRow.split('<td>')[1:]
     linkID = int(getEnclosedString(singleLinkRows[0], '\<a\ href\=\"linkme\.php\?l\=', '\"\>'))
     linkTitle = getEnclosedString(singleLinkRows[0], '\<a\ href\=\"linkme\.php\?l\=' + str(linkID) + '\"\>', '\<\/a\>\<\/td\>')
-    linkDate = int(time.mktime(datetime.datetime.strptime(getEnclosedString(singleLinkRows[1], '', '\<\/td\>'), "%m/%d/%Y %H:%M").timetuple()))
+    linkDate = int(time.mktime(datetime.datetime.strptime(getEnclosedString(singleLinkRows[1], '', '\<\/td\>'), "%m/%d/%Y %H:%M").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple()))
     linkUserID = int(getEnclosedString(singleLinkRows[2], '\<a\ href\=\"profile\.php\?user\=', '\"\>'))
     linkUsername = getEnclosedString(singleLinkRows[2], '\<a\ href\=\"profile\.php\?user\=' + str(linkUserID) + '\"\>', '\<\/a\>\<\/td\>')
     linkVoteNum = int(getEnclosedString(singleLinkRows[3], '\(based\ on\ ', '\ votes\)\<\/td\>'))
@@ -537,7 +563,7 @@ def getTopicPage(cookieString, topicID, boardID=42, pageNum=1, archived=False, u
   if not archived:
     subdomain = "boards"
   else:
-    subdomain = "archives"  
+    subdomain = "archives"
   
   topicPage = pycurl.Curl()
   response = cStringIO.StringIO()
@@ -651,7 +677,7 @@ def getTopicDateUnix(text):
   """
   Given a string representation of a topic's date, returns the unix timestamp of said topic date.
   """
-  return True and int(time.mktime(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M").timetuple())) or False
+  return True and int(time.mktime(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
   
 def getTopicInfoFromListing(text):
   """
@@ -703,7 +729,7 @@ def getTopicList(cookieString, archived=False, boardID=42, pageNum=1, topics=[],
   else:
     return True and topics or False
  
-def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime='', lastPostUnit=86400, pageNum=1, topics=[], recurse=True):
+def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime='', lastPostUnit=86400, pageNum=1, topics=False, recurse=True):
   """
   Searches for topics using given parameters, and returns a list of dicts of returned topics.
   By default, recursively iterates through every page of search results.
@@ -713,6 +739,9 @@ def searchTopics(cookieString, archived=False, boardID=42, allWords="", exactPhr
     subdomain = "boards"
   else:
     subdomain = "archives"
+    
+  if not topics:
+    topics = []
   
   # assemble the search query and request this search page's topic listing.
   searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*').replace('%27', '"')
@@ -743,7 +772,7 @@ def checkTopicValid(text):
   Given the HTML of a topic page, checks to ensure that the topic exists and that we can read it.
   """
   #return not bool(re.search(r'<em>Invalid topic.</em>', text)) and not bool(re.search(r'<h1>500 - Internal Server Error</h1>', text)) and not bool(re.search(r'<em>You are not authorized to view messages on this board.</em>', text))
-  return bool(re.search(r'Page\ 1\ of\ ',text))
+  return bool(re.search(r'Page\ 1\ of\ ',str(text)))
 
 def checkArchivedTopic(text):
   """
@@ -755,7 +784,8 @@ def checkArchivedRedirect(text):
   """
   Given the HTML of a topic page, checks to see if this is redirecting to an archived topic.
   """
-  return bool(re.search(r'<meta http-equiv="refresh" content="0;url=//archives\.endoftheinter\.net/showmessages\.php\?', text))
+#  return bool(re.search(r'(HTTP/1.1\ 302\ Found)', text))
+  return bool(re.search(r'\<meta\ http\-equiv\=\"refresh\"\ content\=\"0\;url\=//archives\.endoftheinter\.net/showmessages\.php\?', text))
 
 def getBoardID(text):
   """
@@ -768,6 +798,12 @@ def getTopicID(text):
   Given the HTML of a topic's page, return topic ID or False if not found.
   """
   return True and int(getEnclosedString(text, r'showmessages\.php\?board=[-\d]+\&amp\;topic\=', r'[^\d]')) or False
+  
+def getTopicTitle(text):
+  """
+  Given the HTML of a topic's page, return topic title or False if not found.
+  """
+  return True and getEnclosedString(text, r'\<\/h1\>\<h2\>', r'\<\/h2\>') or False
   
 def getPostID(text):
   """
@@ -798,7 +834,7 @@ def getPostDateUnix(text):
   Given HTML of a post, return post date as a unix timestamp or False if not found.
   """
   if getPostDate(text):
-    return True and int(time.mktime(datetime.datetime.strptime(getPostDate(text), "%m/%d/%Y %I:%M:%S %p").timetuple())) or False
+    return True and int(time.mktime(datetime.datetime.strptime(getPostDate(text), "%m/%d/%Y %I:%M:%S %p").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
   else:
     return False
 

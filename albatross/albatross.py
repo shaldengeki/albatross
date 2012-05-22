@@ -585,7 +585,7 @@ class Albatross(object):
     for post in thisPagePosts:
       posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("text",self.getPostText(post))]))
 
-  def getTopicPosts(self, topicID, boardID=42, archived=False, topicNumPages=False):
+  def getTopicPosts(self, topicID, boardID=42, archived=False, topicNumPages=False, startPageNum=1):
     """
     Given a topicID and boardID (and whether or not it's in the archives), return a list of post dicts in this topic.
     Performs operation in parallel.
@@ -596,6 +596,7 @@ class Albatross(object):
       topicSubdomain = "boards"
     
     posts = []
+    
     if not topicNumPages:
       # get the first page of this topic to obtain a range of pages.
       firstPageHTML = self.getTopicPage(topicID=topicID, boardID=boardID, pageNum=1, archived=archived)
@@ -606,9 +607,8 @@ class Albatross(object):
       firstPagePosts = self.getPagePosts(firstPageHTML)
       for post in firstPagePosts:
         posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("text",self.getPostText(post))]))
-      startPageNum = 2
-    else:
-      startPageNum = 1
+      if startPageNum == 1:
+        startPageNum = 2
     # now loop over all the other pages (if there are any)
     for pageNum in range(startPageNum, int(topicNumPages)+1):
       self.parallelCurl.startrequest('https://' + topicSubdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&page=' + str(pageNum), self.appendTopicPagePosts, [topicID, boardID, posts])

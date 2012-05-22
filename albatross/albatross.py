@@ -1,8 +1,10 @@
 ﻿#!/usr/bin/python
-# Copyright 2010 Shal Dengeki
-# Licensed under the WTF Public License, Version 2.0
-# http://sam.zoy.org/wtfpl/COPYING
-# Provides link- and board-scraping functions for ETI.
+'''
+    albatross - Provides link- and board-scraping functions for ETI.
+    License - WTF Public License, Version 2.0 <http://sam.zoy.org/wtfpl/COPYING>
+    Author - Shal Dengeki <shaldengeki@gmail.com>
+	  REQUIRES - pytz, pycurl, pyparallelcurl
+'''
 
 import re
 import sys
@@ -23,6 +25,9 @@ def printUsageAndQuit():
   sys.exit(1)
 
 class Albatross(object):
+  '''
+  Provides programmatic access to link and board information.
+  '''
   def __init__(self, username="", password="", cookieString=""):
     self.username = username
     self.password = password
@@ -65,7 +70,7 @@ class Albatross(object):
     loginHeaders.setopt(pycurl.SSL_VERIFYHOST, False)
     loginHeaders.setopt(pycurl.POST, 1)
     loginHeaders.setopt(pycurl.HEADER, True)
-    loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([('b',str(username)), ('p', str(password)), ('r', '')])))
+    loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([('b', str(username)), ('p', str(password)), ('r', '')])))
     loginHeaders.setopt(pycurl.URL, 'https://endoftheinter.net/index.php')
     loginHeaders.setopt(pycurl.USERAGENT, 'Albatross')
     loginHeaders.setopt(pycurl.WRITEFUNCTION, response.write)
@@ -101,12 +106,12 @@ class Albatross(object):
     """
     if not text or not len(text):
       return False
-    flags=False
+    flags = False
     if multiLine:
-      flags=re.DOTALL
-    greedyPart="?"
+      flags = re.DOTALL
+    greedyPart = "?"
     if greedy:
-      greedyPart=""    
+      greedyPart = ""    
     stringMatch = re.search(str(startString) + r'(?P<return>.+' + greedyPart + r')' + str(endString), text, flags=flags)
     if not stringMatch:
       return False
@@ -303,7 +308,6 @@ class Albatross(object):
     """
     Returns the int value of the maximum link ID on ETI.
     """
-    linkListPageHTML = []
     return int(self.getEnclosedString(self.getPage('https://links.endoftheinter.net/links.php?mode=new'), r'\<td\>\<a href\=\"linkme\.php\?l\=', r'\"\>'))
     
   def appendLinkPageComments(self, text, url, curlHandle, paramArray):
@@ -402,7 +406,7 @@ class Albatross(object):
     Returns True or False to reflect if link exists.
     """
     invalid_match = re.search(r'\<em\>Invalid link\!\<\/em\>', text)
-    return (not invalid_match and not checkLinkDeleted(text))
+    return (not invalid_match and not self.checkLinkDeleted(text))
     
   def checkLinkNeedsReporting(self, text, url, curlHandle, paramArray):
     """
@@ -459,23 +463,28 @@ class Albatross(object):
       if allText_matches:
         for base_url in allText_matches:
           if base_url in site_dict and 'Uploads' not in categories:
-              reasonList.append((3, 'Needs category: Uploads'))
+            reasonList.append((3, 'Needs category: Uploads'))
 
     if reasonList:
       reportComment = ""
-      for tuple in reasonList:
+      for reasonTuple in reasonList:
         if not reportComment:
-          reportComment = tuple[1]
+          reportComment = reasonTuple[1]
         else:
-          reportComment = reportComment + "\r\n" + tuple[1]
-        lastReason = tuple[0]
+          reportComment = reportComment + "\r\n" + reasonTuple[1]
+        lastReason = reasonTuple[0]
       if int(linkID) and int(lastReason) and len(reportComment):
-        self.parallelCurl.startrequest('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), reportLink, [], post_fields = urllib.urlencode(dict([('r', int(lastReason)), ('c', reportComment)])))
+        self.parallelCurl.startrequest('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), self.reportLink, [], post_fields = urllib.urlencode(dict([('r', int(lastReason)), ('c', reportComment)])))
         print "Reported linkID " + str(linkID) + " (type " + str(lastReason) + "): " + ", ".join(reportComment.split("\r\n"))
     # waiting sucks.
     if linkID % 100 == 0:
       print "Progress: " + str(round(100*(linkID - startID)/(endID - startID), 2)) + "% (" + str(linkID) + "/" + str(endID) + ")"
 
+  def appendLinkPageListingDicts(self, text, url, curlHandle, paramArray):
+    links = paramArray[0]
+    for dict in self.getLinkListingDicts(text):
+      links.append(dict)
+      
   def getNewLinks(self, recurse=True):
     """
     Returns a list of dicts for the newest links on links.php?mode=new.
@@ -483,9 +492,15 @@ class Albatross(object):
     newLinksPage = self.getPage('http://links.endoftheinter.net/links.php?mode=new')
     if not newLinksPage:
       return False
-    return self.getLinkListingDicts(newLinksPage)
+    links = self.getLinkListingDicts(newLinksPage)
+    if recurse:
+      linkNumPages = self.getTopicNumPages(newLinksPage)
+      for pageNum in range(2, int(linkNumPages)+1):
+        self.parallelCurl.startrequest('http://links.endoftheinter.net/links.php?mode=new&page=' + str(pageNum), self.appendLinkPageListingDicts, [links])
+      self.parallelCurl.finishallrequests()
+    return links
     
-  def reportLinks(self, startID, endID, num_concurrent_requests):
+  def reportLinks(self, startID, endID):
     """
     Iterates through provided range of linkIDs, reporting those which are mis-categorized or simply down.
     """
@@ -566,7 +581,7 @@ class Albatross(object):
     if not text:
       return False
     # parse this page and append posts to post list.
-    thisPagePosts = getPagePosts(text)
+    thisPagePosts = self.getPagePosts(text)
     for post in thisPagePosts:
       posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("text",self.getPostText(post))]))
 
@@ -706,10 +721,11 @@ class Albatross(object):
       if topicInfo:
         topics.append(topicInfo)
 
-    for pageNum in range(2, int(totalPageNum)+1):
-      searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*').replace('%27', '"')
-      self.parallelCurl.startrequest('https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search', self.appendTopicSearchTopics, [topics])
-    self.parallelCurl.finishallrequests()    
+    if recurse:
+      for pageNum in range(2, int(totalPageNum)+1):
+        searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*').replace('%27', '"')
+        self.parallelCurl.startrequest('https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search', self.appendTopicSearchTopics, [topics])
+      self.parallelCurl.finishallrequests()    
     return True and topics or False
     
   def checkTopicValid(self, text):

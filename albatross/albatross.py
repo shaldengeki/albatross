@@ -596,10 +596,9 @@ class Albatross(object):
       topicSubdomain = "boards"
     
     posts = []
-    
     if not topicNumPages:
       # get the first page of this topic to obtain a range of pages.
-      firstPageHTML = self.getTopicPage(topicID=topicID, boardID=boardID, pageNum=1, archived=archived)
+      firstPageHTML = self.getTopicPage(topicID=topicID, boardID=boardID, pageNum=startPageNum, archived=archived)
       topicNumPages = self.getTopicNumPages(firstPageHTML)
       if not firstPageHTML or not topicNumPages:
         return False
@@ -607,8 +606,7 @@ class Albatross(object):
       firstPagePosts = self.getPagePosts(firstPageHTML)
       for post in firstPagePosts:
         posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("text",self.getPostText(post))]))
-      if startPageNum == 1:
-        startPageNum = 2
+      startPageNum += 1
     # now loop over all the other pages (if there are any)
     for pageNum in range(startPageNum, int(topicNumPages)+1):
       self.parallelCurl.startrequest('https://' + topicSubdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&page=' + str(pageNum), self.appendTopicPagePosts, [topicID, boardID, posts])

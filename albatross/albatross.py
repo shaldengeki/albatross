@@ -187,7 +187,7 @@ class Albatross(object):
         return response
       else:
         if self.reauthenticate():
-          return self.getPageHeader(url, retries - x)
+          return self.getPageHeader(url, retries=retries-x-1)
         else:
           return False
     return False  
@@ -220,7 +220,7 @@ class Albatross(object):
           return response
         else:
           if self.reauthenticate():
-            return self.getPage(url, retries - x)
+            return self.getPage(url, retries=retries-x-1, authed=authed)
           else:
             return False
       else:

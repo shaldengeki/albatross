@@ -39,6 +39,7 @@ class testAlbatrossClass(object):
     klass.emptyTopicSearchList = klass.etiConn.getPage(url = 'https://boards.endoftheinter.net/search.php?s_aw=Sdfs0SSODIFHshsd7f6s9d876f9s87f6&board=42&submit=Submit')
 
     klass.nwsTopicSearch = klass.etiConn.searchTopics(allWords="NWS", topics=[])
+    klass.archivesTopicSearch = klass.etiConn.searchTopics(allWords="shaldengeki", archived=True, topics=[])
     klass.emptyTopicSearch = klass.etiConn.searchTopics(allWords="Sdfs0SSODIFHshsd7f6s9d876f9s87f6", topics=[])
 
     klass.emptyTopicList = klass.etiConn.getTopicList(archived=False, boardID=-152, pageNum=1, topics=[], recurse=False)
@@ -226,8 +227,8 @@ class testAlbatrossClass(object):
   def testgetTopicList(self):
     assert not self.emptyTopicList
     assert isinstance(self.currentTopicList, list) and len(self.currentTopicList) > 0
-    assert isinstance(self.archivedTopicList, list) and len(self.archivedTopicList) > 0
     
   def testsearchTopics(self):
     assert not self.emptyTopicSearch
-    assert isinstance(self.nwsTopicSearch, list)
+    assert isinstance(self.nwsTopicSearch, list) and len(self.nwsTopicSearch) > 0
+    assert isinstance(self.archivesTopicSearch, list) and len(self.archivesTopicSearch) > 0

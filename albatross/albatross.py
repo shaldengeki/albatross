@@ -98,14 +98,7 @@ class Albatross(object):
 
     cookieString = self.parseCookieHeader(cookieHeader)
     self.cookieString = cookieString
-    curl_options = {
-      pycurl.SSL_VERIFYPEER: False,
-      pycurl.SSL_VERIFYHOST: False,
-      pycurl.FOLLOWLOCATION: True, 
-      pycurl.COOKIE: self.cookieString
-    }
-    self.parallelCurl = pyparallelcurl.ParallelCurl(20, curl_options)
-    
+    self.setParallelCurlObject()
     return cookieString
   
   def setParallelCurlObject(self):
@@ -312,7 +305,7 @@ class Albatross(object):
     """
     if self.getLinkDate(text):
       try:
-        return True and int(time.mktime(datetime.datetime.strptime(self.getLinkDate(text), "%m/%d/%Y %I:%M:%S %p").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+        return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getLinkDate(text), "%m/%d/%Y %I:%M:%S %p")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
       except ValueError:
         return False
     else:
@@ -445,7 +438,7 @@ class Albatross(object):
       singleLinkRows = linkRow.split('<td>')[1:]
       linkID = int(self.getEnclosedString(singleLinkRows[0], '\<a\ href\=\"linkme\.php\?l\=', '\"\>'))
       linkTitle = self.getEnclosedString(singleLinkRows[0], '\<a\ href\=\"linkme\.php\?l\=' + str(linkID) + '\"\>', '\<\/a\>\<\/td\>')
-      linkDate = int(time.mktime(datetime.datetime.strptime(self.getEnclosedString(singleLinkRows[1], '', '\<\/td\>'), "%m/%d/%Y %H:%M").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple()))
+      linkDate = int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getEnclosedString(singleLinkRows[1], '', '\<\/td\>'), "%m/%d/%Y %H:%M")).astimezone(pytz.timezone(time.tzname[0])).timetuple()))
       linkUserID = int(self.getEnclosedString(singleLinkRows[2], '\<a\ href\=\"profile\.php\?user\=', '\"\>'))
       linkUsername = self.getEnclosedString(singleLinkRows[2], '\<a\ href\=\"profile\.php\?user\=' + str(linkUserID) + '\"\>', '\<\/a\>\<\/td\>')
       linkVoteNum = int(self.getEnclosedString(singleLinkRows[3], '\(based\ on\ ', '\ votes\)\<\/td\>'))
@@ -717,7 +710,7 @@ class Albatross(object):
     Given a string representation of a topic's date, returns the unix timestamp of said topic date.
     """
     try:
-      return True and int(time.mktime(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+      return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
     except ValueError:
       # provided string does not match our expected format.
       return False
@@ -896,7 +889,7 @@ class Albatross(object):
     Given HTML of a post, return post date as a unix timestamp or False if not found.
     """
     if self.getPostDate(text):
-      return True and int(time.mktime(datetime.datetime.strptime(self.getPostDate(text), "%m/%d/%Y %I:%M:%S %p").replace(tzinfo=pytz.timezone("US/Central")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+      return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getPostDate(text), "%m/%d/%Y %I:%M:%S %p")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
     else:
       return False
 

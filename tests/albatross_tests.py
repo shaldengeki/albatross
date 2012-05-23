@@ -44,7 +44,7 @@ class testAlbatrossClass(object):
 
     klass.emptyTopicList = klass.etiConn.getTopicList(archived=False, boardID=-152, pageNum=1, topics=[], recurse=False)
     klass.currentTopicList = klass.etiConn.getTopicList(archived=False, boardID=42, pageNum=1, topics=[], recurse=False)
-    klass.archivedTopicList = klass.etiConn.getTopicList(archived=True, boardID=42, pageNum=1, topics=[], recurse=True)
+    # klass.archivedTopicList = klass.etiConn.getTopicList(archived=True, boardID=42, pageNum=1, topics=[], recurse=True)
     
   def testLogin(self):
     assert not self.etiConn.login("FAKE USERNAME", "FAKE PASSWORD")

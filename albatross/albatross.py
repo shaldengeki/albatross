@@ -3,19 +3,21 @@
     albatross - Provides link- and board-scraping functions for ETI.
     License - WTF Public License, Version 2.0 <http://sam.zoy.org/wtfpl/COPYING>
     Author - Shal Dengeki <shaldengeki@gmail.com>
-	  REQUIRES - pytz, pycurl, pyparallelcurl
+    REQUIRES - pytz, pycurl, pyparallelcurl
 '''
 
+import cStringIO
+import datetime
+import os
 import re
 import sys
+import time
 import urllib
 import urllib2
-import time
-import datetime
+
 import pytz
 import pycurl
 import pyparallelcurl
-import cStringIO
 
 def printUsageAndQuit():
   """
@@ -28,23 +30,31 @@ class Albatross(object):
   '''
   Provides programmatic access to link and board information.
   '''
-  def __init__(self, username="", password="", cookieString=""):
+  def __init__(self, username="", password="", cookieString="", cookieFile="", reauth=None):
+    """
+    Albatross constructor.
+    Expects either a username + password pair, or a cookie string and possibly a cookie file to read updated cookie strings from.
+    If a username + password or cookie string + file pair is provided, then will attempt to reauthenticate if a logout is detected.
+    To prevent this behavior, call the constructor with the reauth argument set to False.
+    """
     self.username = username
     self.password = password
+    self.cookieFile = cookieFile
     if username and password:
       self.cookieString = self.login(self.username, self.password)
+      self.reauth = True
     elif cookieString:
       self.cookieString = cookieString
+      if os.path.exists(self.cookieFile):
+        self.reauth = True
+      else:
+        self.reauth = False
+    if reauth is not None:
+      self.reauth = bool(reauth)
     if not self.cookieString or not self.checkLoggedIn():
       print "Warning: invalid credentials provided."
-    curl_options = {
-      pycurl.SSL_VERIFYPEER: False,
-      pycurl.SSL_VERIFYHOST: False,
-      pycurl.FOLLOWLOCATION: True, 
-      pycurl.COOKIE: self.cookieString
-    }
-    self.parallelCurl = pyparallelcurl.ParallelCurl(20, curl_options)
-  
+    self.setParallelCurlObject()
+    
   def parseCookieHeader(self, string):
     """
     Given a cookie response header returned by pyCurl, return an array of cookie key/values.
@@ -98,6 +108,40 @@ class Albatross(object):
     
     return cookieString
   
+  def setParallelCurlObject(self):
+    """
+    (Re)sets the parallelCurl object to use the current cookieString.
+    """
+    self.parallelCurlOptions = {
+      pycurl.SSL_VERIFYPEER: False,
+      pycurl.SSL_VERIFYHOST: False,
+      pycurl.FOLLOWLOCATION: True, 
+      pycurl.COOKIE: self.cookieString
+    }
+    try:
+      self.parallelCurl.setoptions(self.parallelCurlOptions)
+    except AttributeError:
+      self.parallelCurl = pyparallelcurl.ParallelCurl(20, self.parallelCurlOptions)
+    
+  def reauthenticate(self):
+    """
+    Reauthenticates and resets authentication attributes if need be and reauth attribute is True.
+    """
+    if self.reauth:
+      if self.checkLoggedIn():
+        return True
+      if self.username and self.password:
+        cookieString = self.login(self.username, self.password)
+      elif os.path.exists(self.cookieFile):
+        cookieFile = open(self.cookieFile, 'r')
+        cookieString = cookieFile.readline().strip('\n')
+        cookieFile.close()
+      if cookieString and cookieString != self.cookieString:
+        self.cookieString = cookieString
+        self.setParallelCurlObject()
+        return True
+    return False
+  
   def getEnclosedString(self, text, startString='', endString='', multiLine=False, greedy=False):
     """
     Given some text and two strings, return the string that is encapsulated by the first sequence of these two strings in order.
@@ -116,12 +160,6 @@ class Albatross(object):
     if not stringMatch:
       return False
     return unicode(stringMatch.group('return'), encoding='latin-1').encode('utf-8')
-
-  def returnPageHTML(self, text, url, curlHandle, paramArray):
-    """
-    Takes the result of a pyparallelcurl request and appends it in its entirety to paramArray.
-    """
-    paramArray.append(text)
     
   def getPageHeader(self, url, retries=10):
     """
@@ -143,15 +181,22 @@ class Albatross(object):
         pageRequest.perform()
         pageRequest.close()
         response = response.getvalue()
-        return response
       except:
-        continue    
+        continue
+      if self.checkPageAuthed(response):
+        return response
+      else:
+        if self.reauthenticate():
+          return self.getPageHeader(url, retries - x)
+        else:
+          return False
     return False  
 
-  def getPage(self, url, retries=10):
+  def getPage(self, url, retries=10, authed=True):
     """
     Uses cURL to read a page.
     Retries up to retries times before returning an error.
+    authed specifies whether or not we should definitely be authenticated in this request.
     """
     
     for x in range(retries): # Limit the number of retries.
@@ -168,9 +213,18 @@ class Albatross(object):
         pageRequest.perform()
         pageRequest.close()
         response = response.getvalue()
-        return response
       except:
-        continue    
+        continue
+      if authed:
+        if self.checkPageAuthed(response):
+          return response
+        else:
+          if self.reauthenticate():
+            return self.getPage(url, retries - x)
+          else:
+            return False
+      else:
+        return response
     return False
     
   def checkLoggedIn(self):
@@ -179,11 +233,20 @@ class Albatross(object):
     Returns boolean value reflecting this.
     """
     
-    mainPageHTML = self.getPage('http://endoftheinter.net/main.php')
+    mainPageHTML = self.getPage('http://endoftheinter.net/main.php', authed=False)
     if not mainPageHTML or "End of the Internet - Home" not in mainPageHTML:
       return False
     else:
       return True
+    
+  def checkPageAuthed(self, text):
+    """
+    Checks to ensure that the cookieString we used to make our request is still valid.
+    If it's not, then there will be an error message in the HTML returned by the request.
+    """
+    if text is '' or "Sie haben das Ende des Internets erreicht." in text:
+      return False
+    return True
     
   def getLinkPage(self, linkID, pageNum=1):
     """
@@ -205,6 +268,13 @@ class Albatross(object):
       return False
     
     linkPageHTML = response.getvalue()
+    if self.checkPageAuthed(linkPageHTML):
+      return linkPageHTML
+    else:
+      if self.reauthenticate():
+        return self.getLinkPage(linkID, pageNum)
+      else:
+        return False
     return True and linkPageHTML or False
     
   def getLinkTitle(self, text):
@@ -319,10 +389,14 @@ class Albatross(object):
     
     if not text:
       return False
-    # parse this page and append comments to comment list.
-    thisPageComments = self.getPagePosts(text)[:-1]
-    for comment in thisPageComments:
-      comments.append(dict([("linkID",int(linkID)), ("commentID", self.getLinkCommentID(comment)), ("username",self.getPostUsername(comment)), ("userID",self.getPostUserID(comment)), ("date",self.getPostDateUnix(comment)), ("text",self.getPostText(comment))]))
+    elif not self.checkPageAuthed(text):
+      if self.reauthenticate():
+        self.parallelCurl.startrequest(url, self.appendLinkPageComments, paramArray)
+    else:
+      # parse this page and append comments to comment list.
+      thisPageComments = self.getPagePosts(text)[:-1]
+      for comment in thisPageComments:
+        comments.append(dict([("linkID",int(linkID)), ("commentID", self.getLinkCommentID(comment)), ("username",self.getPostUsername(comment)), ("userID",self.getPostUserID(comment)), ("date",self.getPostDateUnix(comment)), ("text",self.getPostText(comment))]))
 
   def getLinkComments(self, linkID, linkNumPages=False):
     """
@@ -417,17 +491,22 @@ class Albatross(object):
         checks those to see if they're down and if this link is tagged with the 'Uploads' category.
     Returns False if all the checks pass (or the link is deleted), a list of reasons if not.
     """
-    if not self.checkLinkExists(text):
-      return False
-
-    if self.checkLinkDeleted(text):
-      return False
-    
     linkID = paramArray[0]
     startID = paramArray[1]
     endID = paramArray[2]
     tag_dict = paramArray[3]
     site_dict = paramArray[4]
+    
+    if not self.checkPageAuthed(text):
+      if self.reauthenticate():
+        self.parallelCurl.startrequest(url, self.checkLinkNeedsReporting, paramArray)
+        return
+
+    if not self.checkLinkExists(text):
+      return False
+
+    if self.checkLinkDeleted(text):
+      return False
     
     reasonList = []
     
@@ -482,6 +561,12 @@ class Albatross(object):
 
   def appendLinkPageListingDicts(self, text, url, curlHandle, paramArray):
     links = paramArray[0]
+    
+    if not self.checkPageAuthed(text):
+      if self.reauthenticate():
+        self.parallelCurl.startrequest(url, self.appendLinkPageListingDicts, paramArray)
+        return
+    
     for dict in self.getLinkListingDicts(text):
       links.append(dict)
       
@@ -568,6 +653,15 @@ class Albatross(object):
       return False
     
     topicPageHTML = response.getvalue()
+    
+    if self.checkPageAuthed(topicPageHTML):
+      return topicPageHTML
+    else:
+      if self.reauthenticate():
+        return self.getTopicPage(topicID, boardID=boardID, pageNum=pageNum, archived=archived, userID=userID)
+      else:
+        return False
+    
     return True and topicPageHTML or False
     
   def appendTopicPagePosts(self, text, url, curlHandle, paramArray):
@@ -580,6 +674,12 @@ class Albatross(object):
     
     if not text:
       return False
+    
+    if not self.checkPageAuthed(text):
+      if self.reauthenticate():
+        self.parallelCurl.startrequest(url, self.appendTopicPagePosts, paramArray)
+        return
+      
     # parse this page and append posts to post list.
     thisPagePosts = self.getPagePosts(text)
     for post in thisPagePosts:
@@ -624,6 +724,7 @@ class Albatross(object):
     except ValueError:
       # provided string does not match our expected format.
       return False
+
   def getTopicInfoFromListing(self, text):
     """
     Returns a dict of topic attributes from a chunk of a topic list, or False if it doesn't match a topic listing regex.
@@ -679,6 +780,11 @@ class Albatross(object):
     Takes the result of a pyparallelcurl request on a topic search and appends the resultant topics to the given list.
     """
     topics = paramArray[0]
+    
+    if not self.checkPageAuthed(text):
+      if self.reauthenticate():
+        self.parallelCurl.startrequest(url, self.appendTopicSearchTopics, paramArray)
+        return
     
     # split the topic listing string into a list so that one topic is in each element.
     topicListingHTML = self.getEnclosedString(text, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)

@@ -18,13 +18,24 @@ Albatross is licensed under the WTFPL. Do what you want with it!
 Getting Started
 ---------------
 
-To get started, simply install Python, download albatross, and do:
+To get started, simply install Albatross by doing `sudo python setup.py install`, and do:
 
     import albatross
-    etiConn = albatross.Albatross(username, password)
+    etiConn = albatross.Albatross(username="LlamaGuy", password="hunter2")
     etiConn.searchTopics(allWords="luelinks")
-    ...
 
+Alternatively, you can also provide a cookie string to Albatross in lieu of a username and password:
+
+    import albatross
+    etiConn = albatross.Albatross(cookieString="your-cookie-string-here", cookieFile="your-cookie=file-here.txt")
+    etiConn.searchTopics(allWords="luelinks")
+    
+By default, if you specify a username+password or cookieString+cookieFile pair upon construction, Albatross will attempt to re-authenticate with ETI if it detects that you have been logged out. You can disable this behavior when you call the constructor, like so:
+
+    etiConn = albatross.Albatross(username="LlamaGuy", password="hunter2", reauth=False)
+    
+This behavior is disabled if you specify a cookieString but no cookieFile, or if cookieFile does not exist on your system.
+    
 Tests
 -----
 

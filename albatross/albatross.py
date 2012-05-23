@@ -248,34 +248,34 @@ class Albatross(object):
       return False
     return True
     
-  def getLinkPage(self, linkID, pageNum=1):
+  def getLinkPage(self, linkID, pageNum=1, retries=10):
     """
     Grabs a link's page, given its linkID, and returns the HTML.
     Upon failure returns False.
     """
-    linkPage = pycurl.Curl()
-    response = cStringIO.StringIO()
-    linkPage.setopt(pycurl.COOKIE, str(self.cookieString))
-    linkPage.setopt(pycurl.URL, 'https://links.endoftheinter.net/linkme.php?l=' + str(linkID) + '&page=' + str(pageNum))
-    linkPage.setopt(pycurl.USERAGENT, 'Albatross')
-    linkPage.setopt(pycurl.SSL_VERIFYPEER, False)
-    linkPage.setopt(pycurl.SSL_VERIFYHOST, False)
-    linkPage.setopt(pycurl.WRITEFUNCTION, response.write)
-    try:
-      linkPage.perform()
-      linkPage.close()
-    except:
-      return False
-    
-    linkPageHTML = response.getvalue()
-    if self.checkPageAuthed(linkPageHTML):
-      return linkPageHTML
-    else:
-      if self.reauthenticate():
-        return self.getLinkPage(linkID, pageNum)
+    for x in range(retries):
+      linkPage = pycurl.Curl()
+      response = cStringIO.StringIO()
+      linkPage.setopt(pycurl.COOKIE, str(self.cookieString))
+      linkPage.setopt(pycurl.URL, 'https://links.endoftheinter.net/linkme.php?l=' + str(linkID) + '&page=' + str(pageNum))
+      linkPage.setopt(pycurl.USERAGENT, 'Albatross')
+      linkPage.setopt(pycurl.SSL_VERIFYPEER, False)
+      linkPage.setopt(pycurl.SSL_VERIFYHOST, False)
+      linkPage.setopt(pycurl.WRITEFUNCTION, response.write)
+      try:
+        linkPage.perform()
+        linkPage.close()
+      except:
+        continue
+      linkPageHTML = response.getvalue()
+      if self.checkPageAuthed(linkPageHTML):
+        return linkPageHTML
       else:
-        return False
-    return True and linkPageHTML or False
+        if self.reauthenticate():
+          return self.getLinkPage(linkID, pageNum, retries=retries-x-1)
+        else:
+          return False
+    return False
     
   def getLinkTitle(self, text):
     """
@@ -628,7 +628,7 @@ class Albatross(object):
 
     self.parallelCurl.finishallrequests()
 
-  def getTopicPage(self, topicID, boardID=42, pageNum=1, archived=False, userID=""):
+  def getTopicPage(self, topicID, boardID=42, pageNum=1, archived=False, userID="", retries=10):
     """
     Grabs a topic's message listing, given its topicID (and optional boardID, userID, archived, and page number parameters), and returns the HTML.
     Upon failure returns False.
@@ -637,32 +637,29 @@ class Albatross(object):
       subdomain = "boards"
     else:
       subdomain = "archives"
-    
-    topicPage = pycurl.Curl()
-    response = cStringIO.StringIO()
-    topicPage.setopt(pycurl.COOKIE, str(self.cookieString))  
-    topicPage.setopt(pycurl.USERAGENT, 'Albatross')
-    topicPage.setopt(pycurl.URL, 'https://' + subdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum))
-    topicPage.setopt(pycurl.SSL_VERIFYPEER, False)
-    topicPage.setopt(pycurl.SSL_VERIFYHOST, False)
-    topicPage.setopt(pycurl.WRITEFUNCTION, response.write)
-    try:
-      topicPage.perform()
-      topicPage.close()
-    except:
-      return False
-    
-    topicPageHTML = response.getvalue()
-    
-    if self.checkPageAuthed(topicPageHTML):
-      return topicPageHTML
-    else:
-      if self.reauthenticate():
-        return self.getTopicPage(topicID, boardID=boardID, pageNum=pageNum, archived=archived, userID=userID)
+    for x in range(retries):
+      topicPage = pycurl.Curl()
+      response = cStringIO.StringIO()
+      topicPage.setopt(pycurl.COOKIE, str(self.cookieString))  
+      topicPage.setopt(pycurl.USERAGENT, 'Albatross')
+      topicPage.setopt(pycurl.URL, 'https://' + subdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum))
+      topicPage.setopt(pycurl.SSL_VERIFYPEER, False)
+      topicPage.setopt(pycurl.SSL_VERIFYHOST, False)
+      topicPage.setopt(pycurl.WRITEFUNCTION, response.write)
+      try:
+        topicPage.perform()
+        topicPage.close()
+      except:
+        continue
+      topicPageHTML = response.getvalue()
+      if self.checkPageAuthed(topicPageHTML):
+        return topicPageHTML
       else:
-        return False
-    
-    return True and topicPageHTML or False
+        if self.reauthenticate():
+          return self.getTopicPage(topicID, boardID=boardID, pageNum=pageNum, archived=archived, userID=userID, retries=retries-x-1)
+        else:
+          return False
+    return False
     
   def appendTopicPagePosts(self, text, url, curlHandle, paramArray):
     """

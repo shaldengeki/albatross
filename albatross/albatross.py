@@ -19,6 +19,9 @@ import pytz
 import pycurl
 import pyparallelcurl
 
+SITE_MAIN = {"url":"https://endoftheinter.net/","fields":{"username":"b","password":"p"}}
+SITE_MOBILE = {"url":"https://iphone.endoftheinter.net/","fields":{"username":"username","password":"password"}}
+
 def printUsageAndQuit():
   """
   Prints usage information and exits.
@@ -30,7 +33,7 @@ class Albatross(object):
   '''
   Provides programmatic access to link and board information.
   '''
-  def __init__(self, username="", password="", cookieString="", cookieFile="", reauth=None):
+  def __init__(self, username="", password="", cookieString="", cookieFile="", reauth=None, loginSite=SITE_MAIN):
     """
     Albatross constructor.
     Expects either a username + password pair, or a cookie string and possibly a cookie file to read updated cookie strings from.
@@ -39,6 +42,7 @@ class Albatross(object):
     """
     self.username = username
     self.password = password
+    self.loginSite = loginSite
     self.cookieFile = cookieFile
     if username and password:
       self.cookieString = self.login(self.username, self.password)
@@ -80,8 +84,8 @@ class Albatross(object):
     loginHeaders.setopt(pycurl.SSL_VERIFYHOST, False)
     loginHeaders.setopt(pycurl.POST, 1)
     loginHeaders.setopt(pycurl.HEADER, True)
-    loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([('b', str(username)), ('p', str(password)), ('r', '')])))
-    loginHeaders.setopt(pycurl.URL, 'https://endoftheinter.net/index.php')
+    loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([(self.loginSite["fields"]["username"], str(username)), (self.loginSite["fields"]["password"], str(password)), ('r', '')])))
+    loginHeaders.setopt(pycurl.URL, self.loginSite["url"]+'index.php')
     loginHeaders.setopt(pycurl.USERAGENT, 'Albatross')
     loginHeaders.setopt(pycurl.WRITEFUNCTION, response.write)
     

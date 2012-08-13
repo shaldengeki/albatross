@@ -10,7 +10,7 @@ config = {
   'download_url': 'http://github.com/shaldengeki/albatross/tarball/master', 
   'author_email': 'shaldengeki@gmail.com', 
   'version': '1.0', 
-  'install_requires': ['nose', 'pycurl'], 
+  'install_requires': ['nose', 'pycurl', 'pytz'], 
   'packages': ['albatross'], 
   'scripts': [],
   'name': 'albatross'

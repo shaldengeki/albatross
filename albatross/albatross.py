@@ -565,8 +565,8 @@ class Albatross(object):
         self.parallelCurl.startrequest(url, self.appendLinkPageListingDicts, paramArray)
         return
     
-    for dict in self.getLinkListingDicts(text):
-      links.append(dict)
+    for linkDict in self.getLinkListingDicts(text):
+      links.append(linkDict)
       
   def getNewLinks(self, recurse=True):
     """
@@ -751,12 +751,16 @@ class Albatross(object):
     # assemble the search query and request this search page's topic listing.
     searchQuery = urllib.urlencode([('board', boardID), ('page', pageNum)])
     topicPageHTML = self.getPage('https://' + subdomain + '.endoftheinter.net/showtopics.php?' + searchQuery)
+    if not topicPageHTML:
+      return False
     
     # get the total page number.
     totalPageNum = self.getTopicNumPages(topicPageHTML)
     
     # split the topic listing string into a list so that one topic is in each element.
     topicListingHTML = self.getEnclosedString(topicPageHTML, '<th>Last\ Post</th></tr>', '</tr></table>', multiLine=True)
+    if not topicListingHTML:
+      return False
     topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
     
     for topic in topicListingHTML:
@@ -784,6 +788,8 @@ class Albatross(object):
     
     # split the topic listing string into a list so that one topic is in each element.
     topicListingHTML = self.getEnclosedString(text, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
+    if not topicListingHTML:
+      return False
     topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
 
     for topic in topicListingHTML:
@@ -814,6 +820,8 @@ class Albatross(object):
 
     # split the topic listing string into a list so that one topic is in each element.
     topicListingHTML = self.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
+    if not topicListingHTML:
+      return False
     topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
 
     for topic in topicListingHTML:

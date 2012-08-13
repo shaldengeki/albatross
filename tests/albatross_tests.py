@@ -206,7 +206,8 @@ class testAlbatrossClass(object):
   
   def testgetTopicPosts(self):
     assert not self.etiConn.getTopicPosts(0)
-    assert not self.etiConn.getTopicPosts(7896062, archived=True)
+    assert not self.etiConn.getTopicPosts(1, archived=False)
+    assert not self.etiConn.getTopicPosts(self.validTopicID, archived=True)
     assert len(self.etiConn.getTopicPosts(self.validTopicID)) > 0
     
   def testgetLatestTopicID(self):

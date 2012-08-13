@@ -19,18 +19,11 @@ import pytz
 import pycurl
 import pyparallelcurl
 
-def printUsageAndQuit():
-  """
-  Prints usage information and exits.
-  """
-  print "usage: [--report-links] [--num-requests n] username password startID endID"
-  sys.exit(1)
-
 class Albatross(object):
   '''
   Provides programmatic access to link and board information.
   '''
-  def __init__(self, username="", password="", cookieString="", cookieFile="", reauth=None):
+  def __init__(self, username="", password="", cookieString="", cookieFile="", reauth=None, num_requests=20):
     """
     Albatross constructor.
     Expects either a username + password pair, or a cookie string and possibly a cookie file to read updated cookie strings from.
@@ -40,6 +33,7 @@ class Albatross(object):
     self.username = username
     self.password = password
     self.cookieFile = cookieFile
+    self.num_requests = num_requests
     if username and password:
       self.cookieString = self.login(self.username, self.password)
       self.reauth = True
@@ -114,7 +108,7 @@ class Albatross(object):
     try:
       self.parallelCurl.setoptions(self.parallelCurlOptions)
     except AttributeError:
-      self.parallelCurl = pyparallelcurl.ParallelCurl(20, self.parallelCurlOptions)
+      self.parallelCurl = pyparallelcurl.ParallelCurl(self.num_requests, self.parallelCurlOptions)
     
   def reauthenticate(self):
     """
@@ -389,7 +383,7 @@ class Albatross(object):
       # parse this page and append comments to comment list.
       thisPageComments = self.getPagePosts(text)[:-1]
       for comment in thisPageComments:
-        comments.append(dict([("linkID",int(linkID)), ("commentID", self.getLinkCommentID(comment)), ("username",self.getPostUsername(comment)), ("userID",self.getPostUserID(comment)), ("date",self.getPostDateUnix(comment)), ("text",self.getPostText(comment))]))
+        comments.append(dict([("linkID",int(linkID)), ("commentID", self.getLinkCommentID(comment)), ("username",self.getPostUsername(comment)), ("userID",self.getPostUserID(comment)), ("date",self.getPostDateUnix(comment)), ("sig", self.getPostSig(comment)), ("text",self.getPostText(comment))]))
 
   def getLinkComments(self, linkID, linkNumPages=False):
     """
@@ -406,7 +400,7 @@ class Albatross(object):
       # parse this page and initialize comment list to the first page of comments.
       firstPageComments = self.getPagePosts(firstPageHTML)[:-1]
       for comment in firstPageComments:
-        comments.append(dict([("linkID",int(linkID)), ("commentID", self.getLinkCommentID(comment)), ("username",self.getPostUsername(comment)), ("userID",self.getPostUserID(comment)), ("date",self.getPostDateUnix(comment)), ("text",self.getPostText(comment))]))
+        comments.append(dict([("linkID",int(linkID)), ("commentID", self.getLinkCommentID(comment)), ("username",self.getPostUsername(comment)), ("userID",self.getPostUserID(comment)), ("date",self.getPostDateUnix(comment)), ("sig", self.getPostSig(comment)), ("text",self.getPostText(comment))]))
       startPageNum = 2
     else:
       startPageNum = 1
@@ -673,9 +667,9 @@ class Albatross(object):
     # parse this page and append posts to post list.
     thisPagePosts = self.getPagePosts(text)
     for post in thisPagePosts:
-      posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("text",self.getPostText(post))]))
+      posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("sig", self.getPostSig(post)), ("text",self.getPostText(post))]))
 
-  def getTopicPosts(self, topicID, boardID=42, archived=False, topicNumPages=False, startPageNum=1):
+  def getTopicPosts(self, topicID, boardID=42, archived=False, topicNumPages=False, startPageNum=1, userID=""):
     """
     Given a topicID and boardID (and whether or not it's in the archives), return a list of post dicts in this topic.
     Performs operation in parallel.
@@ -688,18 +682,19 @@ class Albatross(object):
     posts = []
     if not topicNumPages:
       # get the first page of this topic to obtain a range of pages.
-      firstPageHTML = self.getTopicPage(topicID=topicID, boardID=boardID, pageNum=startPageNum, archived=archived)
+      firstPageHTML = self.getTopicPage(topicID=topicID, boardID=boardID, pageNum=startPageNum, archived=archived, userID=userID)
       topicNumPages = self.getTopicNumPages(firstPageHTML)
       if not firstPageHTML or not topicNumPages:
         return False
       # parse this page and initialize post list to the first page of posts.
       firstPagePosts = self.getPagePosts(firstPageHTML)
       for post in firstPagePosts:
-        posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("text",self.getPostText(post))]))
+        posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("sig", self.getPostSig(post)), ("text",self.getPostText(post))]))
       startPageNum += 1
     # now loop over all the other pages (if there are any)
     for pageNum in range(startPageNum, int(topicNumPages)+1):
-      self.parallelCurl.startrequest('https://' + topicSubdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&page=' + str(pageNum), self.appendTopicPagePosts, [topicID, boardID, posts])
+      topicPageParams = urllib.urlencode([('board', str(boardID)), ('topic', str(topicID)), ('u', str(userID)), ('page', str(pageNum))])
+      self.parallelCurl.startrequest('https://' + topicSubdomain + '.endoftheinter.net/showmessages.php?' + topicPageParams, self.appendTopicPagePosts, [topicID, boardID, posts])
     self.parallelCurl.finishallrequests()
 
     # finally, return the post list.
@@ -892,7 +887,11 @@ class Albatross(object):
       return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getPostDate(text), "%m/%d/%Y %I:%M:%S %p")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
     else:
       return False
-
+  def getPostSig(self, text):
+    """
+    Given HTML of a post, return sig or False if not found.
+    """
+    return True and (True and self.getEnclosedString(text, r'---<br />', r'</td>', multiLine=True, greedy=False) or "") or False
   def getPostText(self, text):
     """
     Given HTML of a post, return post text stripped of sig or False if not found.

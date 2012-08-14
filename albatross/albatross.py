@@ -628,21 +628,21 @@ class Albatross(object):
 
     self.parallelCurl.finishallrequests()
 
-  def getTopicPage(self, topicID, boardID=42, pageNum=1, archived=False, userID="", retries=10):
+  def getTopicPage(self, topicID, pageNum=1, archived=False, userID="", retries=10):
     """
     Grabs a topic's message listing, given its topicID (and optional boardID, userID, archived, and page number parameters), and returns the HTML.
     Upon failure returns False.
     """
-    if not archived:
-      subdomain = "boards"
+    if archived:
+      subdomain="archives"
     else:
-      subdomain = "archives"
+      subdomain="boards"
     for x in range(retries):
       topicPage = pycurl.Curl()
       response = cStringIO.StringIO()
       topicPage.setopt(pycurl.COOKIE, str(self.cookieString))  
       topicPage.setopt(pycurl.USERAGENT, 'Albatross')
-      topicPage.setopt(pycurl.URL, 'https://' + subdomain + '.endoftheinter.net/showmessages.php?board=' + str(boardID) + '&topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum))
+      topicPage.setopt(pycurl.URL, 'http://' + subdomain + '.clouds.endoftheinter.net/showmessages.php?topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum))
       topicPage.setopt(pycurl.SSL_VERIFYPEER, False)
       topicPage.setopt(pycurl.SSL_VERIFYHOST, False)
       topicPage.setopt(pycurl.WRITEFUNCTION, response.write)
@@ -656,7 +656,7 @@ class Albatross(object):
         return topicPageHTML
       else:
         if self.reauthenticate():
-          return self.getTopicPage(topicID, boardID=boardID, pageNum=pageNum, archived=archived, userID=userID, retries=retries-x-1)
+          return self.getTopicPage(topicID, pageNum=pageNum, archived=archived, userID=userID, retries=retries-x-1)
         else:
           return False
     return False
@@ -666,8 +666,7 @@ class Albatross(object):
     Takes the HTML of a topic message listing as fed in by pyparallelcurl and appends the posts contained within to the list of posts in paramArray.
     """
     topicID = paramArray[0]
-    boardID = paramArray[1]
-    posts = paramArray[2]
+    posts = paramArray[1]
     
     if not text:
       return False
@@ -680,34 +679,31 @@ class Albatross(object):
     # parse this page and append posts to post list.
     thisPagePosts = self.getPagePosts(text)
     for post in thisPagePosts:
-      posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("sig", self.getPostSig(post)), ("text",self.getPostText(post))]))
+      posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("sig", self.getPostSig(post)), ("text",self.getPostText(post))]))
 
-  def getTopicPosts(self, topicID, boardID=42, archived=False, topicNumPages=False, startPageNum=1, userID=""):
+  def getTopicPosts(self, topicID, archived=False, topicNumPages=False, startPageNum=1, userID=""):
     """
     Given a topicID and boardID (and whether or not it's in the archives), return a list of post dicts in this topic.
     Performs operation in parallel.
     """
-    if archived:
-      topicSubdomain = "archives"
-    else:
-      topicSubdomain = "boards"
+    topicSubdomain = "boards"
     
     posts = []
     if not topicNumPages:
       # get the first page of this topic to obtain a range of pages.
-      firstPageHTML = self.getTopicPage(topicID=topicID, boardID=boardID, pageNum=startPageNum, archived=archived, userID=userID)
+      firstPageHTML = self.getTopicPage(topicID=topicID, pageNum=startPageNum, archived=archived, userID=userID)
       topicNumPages = self.getTopicNumPages(firstPageHTML)
       if not firstPageHTML or not topicNumPages:
         return False
       # parse this page and initialize post list to the first page of posts.
       firstPagePosts = self.getPagePosts(firstPageHTML)
       for post in firstPagePosts:
-        posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("boardID",int(boardID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("sig", self.getPostSig(post)), ("text",self.getPostText(post))]))
+        posts.append(dict([("postID",self.getPostID(post)), ("topicID",int(topicID)), ("username",self.getPostUsername(post)), ("userID",self.getPostUserID(post)), ("date",self.getPostDateUnix(post)), ("sig", self.getPostSig(post)), ("text",self.getPostText(post))]))
       startPageNum += 1
     # now loop over all the other pages (if there are any)
     for pageNum in range(startPageNum, int(topicNumPages)+1):
-      topicPageParams = urllib.urlencode([('board', str(boardID)), ('topic', str(topicID)), ('u', str(userID)), ('page', str(pageNum))])
-      self.parallelCurl.startrequest('https://' + topicSubdomain + '.endoftheinter.net/showmessages.php?' + topicPageParams, self.appendTopicPagePosts, [topicID, boardID, posts])
+      topicPageParams = urllib.urlencode([('topic', str(topicID)), ('u', str(userID)), ('page', str(pageNum))])
+      self.parallelCurl.startrequest('https://' + topicSubdomain + '.clouds.endoftheinter.net/showmessages.php?' + topicPageParams, self.appendTopicPagePosts, [topicID, posts])
     self.parallelCurl.finishallrequests()
 
     # finally, return the post list.
@@ -728,7 +724,7 @@ class Albatross(object):
     """
     Returns a dict of topic attributes from a chunk of a topic list, or False if it doesn't match a topic listing regex.
     """
-    thisTopic = re.search(r'((?P<closed><span\ class\=\"closed\"\>))?\<a\ href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?board\=(?P<boardID>[0-9]+)\&amp\;topic\=(?P<topicID>[0-9]+)\">(<b>)?(?P<title>[^<]+)(</b>)?\</a\>(</span>)?\</td\>\<td\>\<a\ href\=\"//endoftheinter\.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?board\=[0-9]+\&amp\;topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
+    thisTopic = re.search(r'\<td\ class\=\"oh\"\>\<div\ class\=\"fl\"\>((?P<closed><span\ class\=\"closed\"\>))?\<a\ href\=\"//[a-z]+\.clouds\.endoftheinter\.net/showmessages\.php\?topic\=(?P<topicID>[0-9]+)\">(<b>)?(?P<title>[^<]+)(</b>)?\</a\>(</span>)?</div\>\<div\ class\=\"fr\"\>(?P<tags>(.+?))?\ \<\/div\></td\>\<td\>\<a\ href\=\"//clouds\.endoftheinter\.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>\</td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.clouds\.endoftheinter\.net/showmessages\.php\?topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
     if thisTopic:
       newPostCount = 0
       if thisTopic.group('newPostCount'):
@@ -736,47 +732,21 @@ class Albatross(object):
       closedTopic = False
       if thisTopic.group('closed'):
         closedTopic = True
-      return dict([('boardID', int(thisTopic.group('boardID'))), ('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('newPostCount', newPostCount), ('lastPostTime', thisTopic.group('lastPostTime')), ('closed', closedTopic)])
+      if thisTopic.group('tags'):
+        tags = [re.search(r'\"\>(?P<name>[^<]+)', tag).group('name') for tag in thisTopic.group('tags').split("</a>") if tag]
+      else:
+        tags = []
+      return dict([('topicID', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('userID', int(thisTopic.group('userID'))), ('username', thisTopic.group('username')), ('postCount', int(thisTopic.group('postCount'))), ('newPostCount', newPostCount), ('lastPostTime', thisTopic.group('lastPostTime')), ('closed', closedTopic), ('tags', tags)])
     else:
       return False
 
-  def getTopicList(self, archived=False, boardID=42, pageNum=1, topics=[], recurse=False):
+  def getTopicList(self, maxTopicTime="", maxTopicID="", topics=False, recurse=False):
     """
-    Returns a list of topic info dicts for the given board and page number.
-    By default, does not recurse through every page.
-    Upon failure returns False.
+    Special case of searchTopics.
     """
-    if not archived:
-      subdomain = "boards"
-    else:
-      subdomain = "archives"
-    
-    # assemble the search query and request this search page's topic listing.
-    searchQuery = urllib.urlencode([('board', boardID), ('page', pageNum)])
-    topicPageHTML = self.getPage('https://' + subdomain + '.endoftheinter.net/showtopics.php?' + searchQuery)
-    if not topicPageHTML:
-      return False
-    
-    # get the total page number.
-    totalPageNum = self.getTopicNumPages(topicPageHTML)
-    
-    # split the topic listing string into a list so that one topic is in each element.
-    topicListingHTML = self.getEnclosedString(topicPageHTML, '<th>Last\ Post</th></tr>', '</tr></table>', multiLine=True)
-    if not topicListingHTML:
-      return False
-    topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
-    
-    for topic in topicListingHTML:
-      topicInfo = self.getTopicInfoFromListing(topic)
-      if topicInfo:
-        topics.append(topicInfo)
-      else:
-        return False
-    # if there are still more pages in the search results and user has not specified otherwise, then recurse.
-    if pageNum < totalPageNum and recurse:
-      return self.getTopicList(archived=archived, boardID=boardID, pageNum=pageNum+1, topics=topics, recurse=True)
-    else:
-      return True and topics or False
+    if not topics:
+      topics = []
+    return self.searchTopics(query="", maxTopicTime=maxTopicTime, maxTopicID=maxTopicID, topics=topics, recurse=recurse)
    
   def appendTopicSearchTopics(self, text, url, curlHandle, paramArray):
     """
@@ -800,44 +770,38 @@ class Albatross(object):
       if topicInfo:
         topics.append(topicInfo)
   
-  def searchTopics(self, archived=False, boardID=42, allWords="", exactPhrase="", atLeastOne="", without="", numPostsMoreThan=0, numPostsCount='', timeCreatedWithin=1, timeCreatedTime='', timeCreatedUnit=86400, lastPostWithin=1, lastPostTime='', lastPostUnit=86400, pageNum=1, topics=False, recurse=True):
+  def searchTopics(self, query="", maxTopicTime="", maxTopicID="", topics=False, recurse=True):
     """
     Searches for topics using given parameters, and returns a list of dicts of returned topics.
     By default, recursively iterates through every page of search results.
     Upon failure returns False.
     """
-    if not archived:
-      subdomain = "boards"
-    else:
-      subdomain = "archives"
-    
     if not topics:
       topics = []
     
     # assemble the search query and request this search page's topic listing.
-    searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*').replace('%27', '"')
-    topicPageHTML = self.getPage('https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search')
+    searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTopicTime)), ('t', str(maxTopicID))])
+    topicPageHTML = self.getPage('http://boards.clouds.endoftheinter.net/topics/?' + searchQuery)
     
-    # get the total page number.
-    totalPageNum = self.getTopicNumPages(topicPageHTML)
-
     # split the topic listing string into a list so that one topic is in each element.
     topicListingHTML = self.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
     if not topicListingHTML:
-      return False
+      return topics
     topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
-
+    
+    originalTopicsNum = len(topics)
     for topic in topicListingHTML:
       topicInfo = self.getTopicInfoFromListing(topic)
       if topicInfo:
         topics.append(topicInfo)
+    
+    if len(topics) == originalTopicsNum:
+      return topics
 
-    if recurse:
-      for pageNum in range(2, int(totalPageNum)+1):
-        searchQuery = urllib.urlencode([('s_aw', allWords), ('s_ep', exactPhrase), ('s_ao', atLeastOne), ('s_wo', without), ('m_t', numPostsMoreThan), ('m_f', numPostsCount), ('t_t', timeCreatedWithin), ('t_f', timeCreatedTime), ('t_m', timeCreatedUnit), ('l_t', lastPostWithin), ('l_f', lastPostTime), ('l_m', lastPostUnit), ('board', boardID), ('page', pageNum)]).replace('%2A', '*').replace('%27', '"')
-        self.parallelCurl.startrequest('https://' + subdomain + '.endoftheinter.net/search.php?' + searchQuery + '&submit=Search', self.appendTopicSearchTopics, [topics])
-      self.parallelCurl.finishallrequests()    
-    return True and topics or False
+    if not recurse:
+      return True and topics or False
+    # we can't parallelize this, since we have no way of predicting the next ts and t parameters.
+    return True and self.searchTopics(query=query, maxTopicTime=self.getTopicDateUnix(topics[-1]['lastPostTime']), maxTopicID=topics[-1]['topicID'], topics=topics, recurse=recurse) or False
     
   def checkTopicValid(self, text):
     """
@@ -857,25 +821,19 @@ class Albatross(object):
     Given the HTML of a topic page, checks to see if this is redirecting to an archived topic.
     """
     #return bool(re.search(r'(HTTP/1.1\ 302\ Found)', text))
-    return bool(re.search(r'\<meta\ http\-equiv\=\"refresh\"\ content\=\"0\;url\=//archives\.endoftheinter\.net/showmessages\.php\?', text))
+    return bool(re.search(r'\<meta\ http\-equiv\=\"refresh\"\ content\=\"0\;url\=//archives\.clouds\.endoftheinter\.net/showmessages\.php\?', text))
 
-  def getBoardID(self, text):
-    """
-    Given the HTML of a topic page, returns the board it's on.
-    """
-    return True and int(self.getEnclosedString(text, r'\w\.endoftheinter\.net/showmessages\.php\?board\=', r'[^-\d]')) or False
-    
   def getTopicID(self, text):
     """
     Given the HTML of a topic's page, return topic ID or False if not found.
     """
-    return True and int(self.getEnclosedString(text, r'showmessages\.php\?board=[-\d]+\&amp\;topic\=', r'[^\d]')) or False
+    return True and int(self.getEnclosedString(text, r'showmessages\.php\?topic\=', r'[^\d]')) or False
     
   def getTopicTitle(self, text):
     """
     Given the HTML of a topic's page, return topic title or False if not found.
     """
-    return True and self.getEnclosedString(text, r'\<\/h1\>\<h2\>', r'\<\/h2\>') or False
+    return True and self.getEnclosedString(text, r'\<\/div\>\<h1\>', r'\<\/h1\>') or False
     
   def getPostID(self, text):
     """
@@ -887,13 +845,13 @@ class Albatross(object):
     """
     Given HTML of a post, return poster's username or False if not found.
     """
-    return True and self.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or False
+    return True and self.getEnclosedString(text, r'<b>From:</b>\ <a href="//clouds\.endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or False
 
   def getPostUserID(self, text):
     """
     Given HTML of a post, return poster's userID or False if not found.
     """
-    return True and int(self.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">')) or False
+    return True and int(self.getEnclosedString(text, r'<b>From:</b> <a href="//clouds\.endoftheinter\.net/profile\.php\?user=', r'">')) or False
 
   def getPostDate(self, text):
     """
@@ -946,8 +904,8 @@ class Albatross(object):
     Takes the HTML of a topic listing and returns the largest topicID on this page.
     Returns False if no topicIDs on this page.
     """
-    sortedTopicIDs = sorted(re.findall(r'<td><a href="//boards\.endoftheinter\.net/showmessages\.php\?board=42&amp;topic=(\d+)">', text))
-    if sortedTopicIDs and len(sortedTopicIDs) > 0:
-      return int(sortedTopicIDs[-1])
+    latestTopic = self.getTopicInfoFromListing(text)
+    if latestTopic:
+      return int(latestTopic['topicID'])
     else:
       return False

@@ -35,14 +35,14 @@ To get started, simply install Albatross by doing `sudo python setup.py install`
 
     import albatross
     etiConn = albatross.Albatross(username="LlamaGuy", password="hunter2")
-    sampleTopics = etiConn.searchTopics(allWords="luelinks")
+    sampleTopics = etiConn.searchTopics(query="luelinks")
     print str(sampleTopics[0])
 
 Alternatively, you can also provide a cookie string to Albatross in lieu of a username and password:
 
     import albatross
     etiConn = albatross.Albatross(cookieString="your-cookie-string-here", cookieFile="your-cookie=file-here.txt")
-    sampleTopics = etiConn.searchTopics(allWords="luelinks")
+    sampleTopics = etiConn.searchTopics(query="luelinks")
     print str(sampleTopics[0])
 
 By default, if you specify a username+password or cookieString+cookieFile pair upon construction, Albatross will attempt to re-authenticate with ETI if it detects that you have been logged out. If you've provided a username+password, it will attempt to log you back into ETI. If you've provided a cookiestring+file, it will reload the cookiestring from the provided file. You can disable this behavior when you call the constructor, like so:

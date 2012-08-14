@@ -185,6 +185,7 @@ class testAlbatrossClass(object):
     assert isinstance(self.etiConn.getPostDateUnix(self.multiPageTopicText), int) and self.etiConn.getPostDateUnix(self.multiPageTopicText) > 0
     assert isinstance(self.etiConn.getPostDateUnix(self.lastPageTopicText), int) and self.etiConn.getPostDateUnix(self.lastPageTopicText) > 0
     assert self.etiConn.getPostDateUnix(self.lastPageTopicText) == 1271437013
+  
   def testgetPostText(self):
     assert not self.etiConn.getPostText(self.archivedRedirectTopicText)
     assert self.etiConn.getPostText(self.etiConn.getPagePosts(self.starcraftTopicText)[0]) == 'and does that figure in to who you get matched up against on ladder<br />\n'
@@ -232,6 +233,4 @@ class testAlbatrossClass(object):
   def testsearchTopics(self):
     assert not self.emptyTopicSearch
     assert isinstance(self.nwsTopicSearch, list) and len(self.nwsTopicSearch) > 0
-    print str(self.archivesTopicSearch)
-    self.etiConn.searchTopics(allWords="shaldengeki", archived=True, topics=[])
     assert isinstance(self.archivesTopicSearch, list) and len(self.archivesTopicSearch) > 0

@@ -22,11 +22,11 @@ Dependencies
 
 Albatross requires the following:
 
-* pytz
-* pycurl
-* pyparallelcurl
+* [pytz](http://pytz.sourceforge.net)
+* [pycurl](http://pycurl.sourceforge.net)
+* [pyparallelcurl](https://github.com/petewarden/pyparallelcurl)
 
-A copy of Pete Warden's fabulous pyparallelcurl is bundled, but you can find the latest version [here](https://github.com/petewarden/pyparallelcurl) if you so desire.
+A copy of Pete Warden's fabulous pyparallelcurl is bundled, but you can feel free to replace it with a more up-to-date version if one exists.
 
 Getting Started
 ---------------
@@ -44,13 +44,13 @@ Alternatively, you can also provide a cookie string to Albatross in lieu of a us
     etiConn = albatross.Albatross(cookieString="your-cookie-string-here", cookieFile="your-cookie=file-here.txt")
     sampleTopics = etiConn.searchTopics(allWords="luelinks")
     print str(sampleTopics[0])
-    
+
 By default, if you specify a username+password or cookieString+cookieFile pair upon construction, Albatross will attempt to re-authenticate with ETI if it detects that you have been logged out. If you've provided a username+password, it will attempt to log you back into ETI. If you've provided a cookiestring+file, it will reload the cookiestring from the provided file. You can disable this behavior when you call the constructor, like so:
 
     etiConn = albatross.Albatross(username="LlamaGuy", password="hunter2", reauth=False)
-    
+
 This behavior is disabled by default if you specify a cookieString but no cookieFile, or if cookieFile does not exist on your system.
-    
+
 Tests
 -----
 

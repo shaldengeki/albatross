@@ -6,6 +6,7 @@
     REQUIRES - pytz, pycurl, pyparallelcurl
 '''
 
+import calendar
 import cStringIO
 import datetime
 import os
@@ -85,8 +86,8 @@ class Albatross(object):
     loginHeaders.setopt(pycurl.SSL_VERIFYHOST, False)
     loginHeaders.setopt(pycurl.POST, 1)
     loginHeaders.setopt(pycurl.HEADER, True)
-    loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([(self.loginSite["fields"]["username"], str(username)), (self.loginSite["fields"]["password"], str(password)), ('r', '')])))
     loginHeaders.setopt(pycurl.URL, self.loginSite["url"]+'index.php')
+    loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([(self.loginSite["fields"]["username"], str(username)), (self.loginSite["fields"]["password"], str(password)), ('r', '')])))
     loginHeaders.setopt(pycurl.USERAGENT, 'Albatross')
     loginHeaders.setopt(pycurl.WRITEFUNCTION, response.write)
     
@@ -97,7 +98,6 @@ class Albatross(object):
       return False
     
     cookieHeader = response.getvalue()
-    
     if re.search(r'Sie bitte 15 Minuten', cookieHeader) or not re.search(r'session=', cookieHeader):
       return False
 
@@ -163,7 +163,7 @@ class Albatross(object):
     """
     Uses cURL to read a page's headers.
     """
-    for x in range(retries): # Always limit number of retries. For now just return the first request.
+    for x in range(retries): # Limit the number of retries.
       response = cStringIO.StringIO()
       pageRequest = pycurl.Curl()
       
@@ -218,7 +218,7 @@ class Albatross(object):
           return response
         else:
           if self.reauthenticate():
-            return self.getPage(url, retries=retries-x-1, authed=authed)
+            continue
           else:
             return False
       else:
@@ -310,7 +310,8 @@ class Albatross(object):
     """
     if self.getLinkDate(text):
       try:
-        return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getLinkDate(text), "%m/%d/%Y %I:%M:%S %p")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+        return True and int(calendar.timegm(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getLinkDate(text), "%m/%d/%Y %I:%M:%S %p")).utctimetuple())) or False
+        #return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getLinkDate(text), "%m/%d/%Y %I:%M:%S %p")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
       except ValueError:
         return False
     else:
@@ -443,7 +444,8 @@ class Albatross(object):
       singleLinkRows = linkRow.split('<td>')[1:]
       linkID = int(self.getEnclosedString(singleLinkRows[0], '\<a\ href\=\"linkme\.php\?l\=', '\"\>'))
       linkTitle = self.getEnclosedString(singleLinkRows[0], '\<a\ href\=\"linkme\.php\?l\=' + str(linkID) + '\"\>', '\<\/a\>\<\/td\>')
-      linkDate = int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getEnclosedString(singleLinkRows[1], '', '\<\/td\>'), "%m/%d/%Y %H:%M")).astimezone(pytz.timezone(time.tzname[0])).timetuple()))
+      # linkDate = int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getEnclosedString(singleLinkRows[1], '', '\<\/td\>'), "%m/%d/%Y %H:%M")).astimezone(pytz.timezone(time.tzname[0])).timetuple()))
+      linkDate = int(calendar.timegm(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getEnclosedString(singleLinkRows[1], '', '\<\/td\>'), "%m/%d/%Y %H:%M")).utctimetuple()))
       linkUserID = int(self.getEnclosedString(singleLinkRows[2], '\<a\ href\=\"profile\.php\?user\=', '\"\>'))
       linkUsername = self.getEnclosedString(singleLinkRows[2], '\<a\ href\=\"profile\.php\?user\=' + str(linkUserID) + '\"\>', '\<\/a\>\<\/td\>')
       linkVoteNum = int(self.getEnclosedString(singleLinkRows[3], '\(based\ on\ ', '\ votes\)\<\/td\>'))
@@ -716,7 +718,8 @@ class Albatross(object):
     Given a string representation of a topic's date, returns the unix timestamp of said topic date.
     """
     try:
-      return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+      #return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+      return True and int(calendar.timegm(pytz.timezone("US/Central").localize(datetime.datetime.strptime(text, "%m/%d/%Y %H:%M")).utctimetuple())) or False
     except ValueError:
       # provided string does not match our expected format.
       return False
@@ -807,7 +810,7 @@ class Albatross(object):
       subdomain = "boards"
     else:
       subdomain = "archives"
-      
+    
     if not topics:
       topics = []
     
@@ -903,14 +906,17 @@ class Albatross(object):
     Given HTML of a post, return post date as a unix timestamp or False if not found.
     """
     if self.getPostDate(text):
-      return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getPostDate(text), "%m/%d/%Y %I:%M:%S %p")).astimezone(pytz.timezone(time.tzname[0])).timetuple())) or False
+      return True and int(calendar.timegm(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getPostDate(text), "%m/%d/%Y %I:%M:%S %p")).utctimetuple()))
+      #return True and int(time.mktime(pytz.timezone("US/Central").localize(datetime.datetime.strptime(self.getPostDate(text), "%m/%d/%Y %I:%M:%S %p")).astimezone(self.timezone).timetuple())) or False
     else:
       return False
+  
   def getPostSig(self, text):
     """
     Given HTML of a post, return sig or False if not found.
     """
     return True and (True and self.getEnclosedString(text, r'---<br />', r'</td>', multiLine=True, greedy=False) or "") or False
+  
   def getPostText(self, text):
     """
     Given HTML of a post, return post text stripped of sig or False if not found.

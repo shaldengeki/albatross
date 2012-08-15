@@ -232,7 +232,7 @@ class Albatross(object):
     """
     
     mainPageHTML = self.getPage('http://endoftheinter.net/main.php', authed=False)
-    if not mainPageHTML or "End of the Internet - Home" not in mainPageHTML:
+    if not mainPageHTML or 'stats.php">Stats</a>' not in mainPageHTML:
       return False
     else:
       return True

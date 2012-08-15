@@ -11,7 +11,7 @@ class testAlbatrossClass(object):
     
     klass.username = credentials[0]
     klass.password = credentials[1].rstrip()
-    klass.etiConn = albatross.Albatross(username=klass.username, password=klass.password)
+    klass.etiConn = albatross.Albatross(username=klass.username, password=klass.password, loginSite=albatross.SITE_MOBILE)
     
     # main page HTML for getEnclosedString test.
     klass.mainPageText = klass.etiConn.getPage(url='https://endoftheinter.net/main.php')

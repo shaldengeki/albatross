@@ -23,7 +23,7 @@ class testAlbatrossClass(object):
     # klass.invalidLinkText = klass.etiConn.getLinkPage(-1)
     
     # topic page and content HTML for topic tests.
-    klass.currentTopicListPage = klass.etiConn.getPage(url = 'http://boards.clouds.endoftheinter.net/topics/')
+    klass.currentTopicListPage = klass.etiConn.getPage(url = 'http://boards.endoftheinter.net/topics/')
 
     klass.validTopicID = klass.etiConn.getLatestTopicID(klass.currentTopicListPage)
     klass.validTopicText = klass.etiConn.getTopicPage(klass.validTopicID)
@@ -34,8 +34,8 @@ class testAlbatrossClass(object):
     klass.lastPageTopicText = klass.etiConn.getTopicPage(6240806, pageNum=3, archived=True)
     klass.starcraftTopicText = klass.etiConn.getTopicPage(6951014, archived=True)
     
-    klass.nwsTopicSearchList = klass.etiConn.getPage(url = 'http://boards.clouds.endoftheinter.net/topics/NWS')
-    klass.emptyTopicSearchList = klass.etiConn.getPage(url = 'http://boards.clouds.endoftheinter.net/topics/?q=abiejgapsodijf')
+    klass.nwsTopicSearchList = klass.etiConn.getPage(url = 'http://boards.endoftheinter.net/topics/NWS')
+    klass.emptyTopicSearchList = klass.etiConn.getPage(url = 'http://boards.endoftheinter.net/topics/?q=abiejgapsodijf')
 
     klass.nwsTopicSearch = klass.etiConn.searchTopics(query="NWS", topics=[], recurse=False)
     klass.archivesTopicSearch = klass.etiConn.searchTopics(query="Archived", topics=[], recurse=False)
@@ -173,7 +173,7 @@ class testAlbatrossClass(object):
   def testgetPostText(self):
     assert self.etiConn.getPostText(self.etiConn.getPagePosts(self.starcraftTopicText)[0]) == 'and does that figure in to who you get matched up against on ladder<br />\n'
     assert self.etiConn.getPostText(self.etiConn.getPagePosts(self.archivedTopicText)[0]) == 'I think Moltar and I are the only ones. <br />\n'
-    assert self.etiConn.getPostText(self.etiConn.getPagePosts(self.lastPageTopicText)[0]) == '<div class="quoted-message" msgid="t,6240806,67881334@0"><div class="message-top">From: <a href="//clouds.endoftheinter.net/profile.php?user=4438">shaunMD</a> | Posted: 4/16/2010 11:56:39 AM</div>I\'m sorry Kiffe, let\'s kiss and make up.</div><br />\nI am so flambuoyantly gay.<br />\n'
+    assert self.etiConn.getPostText(self.etiConn.getPagePosts(self.lastPageTopicText)[0]) == '<div class="quoted-message" msgid="t,6240806,67881334@0"><div class="message-top">From: <a href="//endoftheinter.net/profile.php?user=4438">shaunMD</a> | Posted: 4/16/2010 11:56:39 AM</div>I\'m sorry Kiffe, let\'s kiss and make up.</div><br />\nI am so flambuoyantly gay.<br />\n'
 
   def testgetTopicPageNum(self):
     assert self.etiConn.getTopicPageNum(self.starcraftTopicText) == 1

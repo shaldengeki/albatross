@@ -686,7 +686,10 @@ class Albatross(object):
     Given a topicID and boardID (and whether or not it's in the archives), return a list of post dicts in this topic.
     Performs operation in parallel.
     """
-    topicSubdomain = "boards"
+    if archived:
+      topicSubdomain = "archives"
+    else:
+      topicSubdomain = "boards"
     
     posts = []
     if not topicNumPages:

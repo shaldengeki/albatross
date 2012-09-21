@@ -827,10 +827,10 @@ class Albatross(object):
 
   def checkArchivedRedirect(self, text):
     """
-    Given the HTML of a topic page, checks to see if this is redirecting to an archived topic.
+    Given the HTML of a topic header, checks to see if this is redirecting to an archived topic.
     """
-    #return bool(re.search(r'(HTTP/1.1\ 302\ Found)', text))
-    return bool(re.search(r'\<meta\ http\-equiv\=\"refresh\"\ content\=\"0\;url\=//archives\.endoftheinter\.net/showmessages\.php\?', text))
+    return bool(re.search(r'HTTP\/1\.1 302 Moved Temporarily', text))
+    # return bool(re.search(r'\<meta\ http\-equiv\=\"refresh\"\ content\=\"0\;url\=//archives\.endoftheinter\.net/showmessages\.php\?', text))
 
   def getTopicID(self, text):
     """

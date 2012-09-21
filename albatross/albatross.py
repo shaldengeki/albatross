@@ -9,6 +9,7 @@
 import calendar
 import cStringIO
 import datetime
+import json
 import os
 import re
 import sys
@@ -131,9 +132,7 @@ class Albatross(object):
       if self.username and self.password:
         cookieString = self.login(self.username, self.password)
       elif os.path.exists(self.cookieFile):
-        cookieFile = open(self.cookieFile, 'r')
-        cookieString = cookieFile.readline().strip('\n')
-        cookieFile.close()
+        cookieString = open(self.cookieFile, 'r').readline().strip('\n')
       if cookieString and cookieString != self.cookieString:
         self.cookieString = cookieString
         self.setParallelCurlObject()
@@ -157,7 +156,10 @@ class Albatross(object):
     stringMatch = re.search(str(startString) + r'(?P<return>.+' + greedyPart + r')' + str(endString), text, flags=flags)
     if not stringMatch:
       return False
-    return unicode(stringMatch.group('return'), encoding='latin-1').encode('utf-8')
+    if isinstance(stringMatch.group('return'), unicode):
+      return stringMatch.group('return')
+    else:
+      return unicode(stringMatch.group('return'), encoding='latin-1').encode('utf-8')
     
   def getPageHeader(self, url, retries=10):
     """
@@ -916,3 +918,62 @@ class Albatross(object):
       return int(latestTopic['topicID'])
     else:
       return False
+
+  def getActiveTags(self):
+    """
+    Returns a list of the names of the active tags at the moment.
+    """
+    mainPage = self.getPage("https://endoftheinter.net/main.php")
+    tagLinksHTML = self.getEnclosedString(mainPage, '<div style\="font\-size\: 14px">', '</div>',multiLine=True)
+    tagLinks = tagLinksHTML.split('&nbsp;&bull; ')
+    return [self.getEnclosedString(text, '">', '</a>').strip() for text in tagLinks]
+
+  def getTagInfo(self, name):
+    """
+    Takes the name of a tag and returns all the information that the currently signed-in user can view about it.
+    """
+    tagInfoParams = urllib.urlencode([('e', ''), ('q', str(name).replace(" ", "_")), ('n', '1')])
+    tagInfoPage = self.getPage("https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams)
+    tagInfoPage = tagInfoPage[1:]
+    try:
+      tagJSON = json.loads(tagInfoPage)
+    except ValueError:
+      print "Warning: invalid JSON object provided by ETI ajax tag interface."
+      raise
+    if len(tagJSON) < 1:
+      return False
+    tagJSON = tagJSON[0]
+    tag = {'name': tagJSON[0]}
+
+    tag['staff'] = []
+
+    moderatorText = self.getEnclosedString(tagJSON[1][0], "<b>Moderators: </b>", "<br /><b>Administrators:")
+    if moderatorText:
+      descriptionEndTag = "<br /><b>Moderators:"
+      moderatorTags = moderatorText.split(", ")
+      for moderator in moderatorTags:
+        tag['staff'].append({'username': str(self.getEnclosedString(moderator, '\">', "</a>")), 'id': int(self.getEnclosedString(moderator, "\?user\=", '\">')), 'role':'moderator'})
+    else:
+      descriptionEndTag = "<br /><b>Administrators:"
+
+    administratorText = self.getEnclosedString(tagJSON[1][0], startString="<br /><b>Administrators: </b>", greedy=True)
+    if administratorText:
+      administratorTags = administratorText.split(", ")
+      for administrator in administratorTags:
+        tag['staff'].append({'username': str(self.getEnclosedString(administrator, '\">', "</a>")), 'id': int(self.getEnclosedString(administrator, "\?user\=", '\">')), 'role':'administrator'})
+    descriptionText = self.getEnclosedString(tagJSON[1][0], ":</b> ", descriptionEndTag)
+    if descriptionText:
+      tag['description'] = descriptionText
+    else:
+      tag['description'] = ''
+
+    tagInteractions = tagJSON[1][1]
+    tag['related_tags'] = tag['forbidden_tags'] = tag['dependent_tags'] = []
+    if len(tagInteractions) > 0:
+      if '0' in tagInteractions:
+         tag['forbidden_tags'] = tagInteractions['0'].keys()
+      if '1' in tagInteractions:
+         tag['dependent_tags'] = tagInteractions['1'].keys()
+      if '2' in tagInteractions:
+         tag['related_tags'] = tagInteractions['2'].keys()
+    return tag

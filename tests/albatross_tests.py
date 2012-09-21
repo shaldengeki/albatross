@@ -202,9 +202,11 @@ class testAlbatrossClass(object):
     assert self.etiConn.getTopicDateUnix(self.etiConn.getTopicInfoFromListing(self.currentTopicListPage)['lastPostTime'])
     
   def testgetTopicInfoFromListing(self):
+    nwsTopicDict = self.etiConn.getTopicInfoFromListing(self.nwsTopicSearchList)
+
     assert not self.etiConn.getTopicInfoFromListing(self.emptyTopicSearchList)
     assert isinstance(self.etiConn.getTopicInfoFromListing(self.currentTopicListPage), dict) and len(self.etiConn.getTopicInfoFromListing(self.currentTopicListPage)) > 0
-    assert isinstance(self.etiConn.getTopicInfoFromListing(self.nwsTopicSearchList), dict) and len(self.etiConn.getTopicInfoFromListing(self.nwsTopicSearchList)) > 0
+    assert isinstance(nwsTopicDict, dict) and len(nwsTopicDict) > 0 and 'tags' in nwsTopicDict and 'NWS' in nwsTopicDict['tags']
     
   def testgetTopicList(self):
     assert not self.emptyTopicList

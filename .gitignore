@@ -1,0 +1,7 @@
+.project
+.pydevproject
+albatross.egg-info
+*.pyc
+build
+dist
+credentials.txt

@@ -460,13 +460,13 @@ class Albatross(object):
     """
     Reports linkID for specified reason and appends comments.
     """
-  #  if not cookieString or not int(linkID) or not int(reason) or not len(comments):
-  #    return False
-  #  params = urllib.urlencode(dict([('r', int(reason)), ('c', comments)]))
-  #  report_link = opener.open('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), params)
-  #  data = report_link.read()
-  #  report_link.close()
-  # LL doesn't provide any feedback upon reporting a link so we have to assume that all went well.
+    #  if not cookieString or not int(linkID) or not int(reason) or not len(comments):
+    #    return False
+    #  params = urllib.urlencode(dict([('r', int(reason)), ('c', comments)]))
+    #  report_link = opener.open('https://links.endoftheinter.net/linkreport.php?l='+str(int(linkID)), params)
+    #  data = report_link.read()
+    #  report_link.close()
+    # LL doesn't provide any feedback upon reporting a link so we have to assume that all went well.
     return True
     
   def checkLinkDeleted(self, text):
@@ -750,13 +750,13 @@ class Albatross(object):
     else:
       return False
 
-  def getTopicList(self, maxTopicTime="", maxTopicID="", topicsActiveSince=False, topics=False, recurse=False):
+  def getTopicList(self, allowedTags=[], forbiddenTags=[], maxTopicTime="", maxTopicID="", topicsActiveSince=False, topics=False, recurse=False):
     """
     Special case of searchTopics. Only fetches latest page of topics by default.
     """
     if not topics:
       topics = []
-    return self.searchTopics(query="", maxTopicTime=maxTopicTime, maxTopicID=maxTopicID, topicsActiveSince=topicsActiveSince, topics=topics, recurse=recurse)
+    return self.searchTopics(query="", allowedTags=allowedTags, forbiddenTags=forbiddenTags, maxTopicTime=maxTopicTime, maxTopicID=maxTopicID, topicsActiveSince=topicsActiveSince, topics=topics, recurse=recurse)
    
   def appendTopicSearchTopics(self, text, url, curlHandle, paramArray):
     """
@@ -780,7 +780,18 @@ class Albatross(object):
       if topicInfo:
         topics.append(topicInfo)
   
-  def searchTopics(self, query="", maxTopicTime="", maxTopicID="", topicsActiveSince=False, topics=False, recurse=True):
+  def formatTagQueryString(self, allowedTags=[], forbiddenTags=[]):
+    """
+    Takes a list of tag names.
+    Returns a string formatted for ETI's topic search URL.
+    E.g. "Posted-Anonymous+Starcraft+Programming"
+    """
+    if len(forbiddenTags) > 0:
+      return "-".join(["+".join(allowedTags), "-".join(forbiddenTags)])
+    else:
+      return "+".join(allowedTags)
+
+  def searchTopics(self, query="", allowedTags=[], forbiddenTags=[], maxTopicTime="", maxTopicID="", topicsActiveSince=False, topics=False, recurse=True):
     """
     Searches for topics using given parameters, and returns a list of dicts of returned topics.
     By default, recursively iterates through every page of search results.
@@ -795,7 +806,7 @@ class Albatross(object):
     
     # assemble the search query and request this search page's topic listing.
     searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTopicTime)), ('t', str(maxTopicID))])
-    topicPageHTML = self.getPage('http://boards.endoftheinter.net/topics/?' + searchQuery)
+    topicPageHTML = self.getPage('http://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowedTags=allowedTags, forbiddenTags=forbiddenTags) + '?' + searchQuery)
     
     # split the topic listing string into a list so that one topic is in each element.
     topicListingHTML = self.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
@@ -929,7 +940,7 @@ class Albatross(object):
     Returns a list of the names of the active tags at the moment.
     """
     mainPage = self.getPage("https://endoftheinter.net/main.php")
-    tagLinksHTML = self.getEnclosedString(mainPage, '<div style\="font\-size\: 14px">', '</div>',multiLine=True)
+    tagLinksHTML = self.getEnclosedString(mainPage, '<div style\="font\-size\: 14px">', '</div>', multiLine=True)
     tagLinks = tagLinksHTML.split('&nbsp;&bull; ')
     return [self.getEnclosedString(text, '">', '</a>').strip() for text in tagLinks]
 

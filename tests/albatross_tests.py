@@ -35,16 +35,27 @@ class testAlbatrossClass(object):
     klass.lastPageTopicText = klass.etiConn.getTopicPage(6240806, pageNum=3, archived=True)
     klass.starcraftTopicText = klass.etiConn.getTopicPage(6951014, archived=True)
     
-    klass.cyberlightTopicSearchList = klass.etiConn.getPage(url = 'https://boards.endoftheinter.net/topics/?q=insanity+enjoy')
+    klass.cyberlightTopicListPage = klass.etiConn.getPage(url = 'https://boards.endoftheinter.net/topics/?q=insanity+enjoy')
+    klass.anonymousTopicListPage = klass.etiConn.getPage(url = 'https://boards.endoftheinter.net/topics/Anonymous')
     klass.emptyTopicSearchList = klass.etiConn.getPage(url = 'https://boards.endoftheinter.net/topics/?q=abiejgapsodijf')
 
-    klass.nwsTopicSearch = klass.etiConn.searchTopics(query="NWS", topics=[], recurse=False)
-    klass.archivesTopicSearch = klass.etiConn.searchTopics(query="Archived", topics=[], recurse=False)
-    klass.emptyTopicSearch = klass.etiConn.searchTopics(query="abiejgapsodijf", topics=[])
+    klass.nwsTopicSearch = klass.etiConn.searchTopics(query="NWS", recurse=False)
+    klass.anonymousTopicSearch = klass.etiConn.searchTopics(query="", allowedTags=["Anonymous"], recurse=False)
+    klass.multiTagTopicSearch = klass.etiConn.searchTopics(query="the", allowedTags=["LUE", "Anonymous"], forbiddenTags=["Sports", "Gaming"], recurse=False)
+    klass.archivesTopicSearch = klass.etiConn.searchTopics(query="Archived", recurse=False)
+    klass.emptyTopicSearch = klass.etiConn.searchTopics(query="abiejgapsodijf", recurse=False)
+    klass.contradictoryTopicSearch = klass.etiConn.searchTopics(allowedTags=["LUE"], forbiddenTags=["LUE"], recurse=False)
 
-    klass.emptyTopicList = klass.etiConn.getTopicList(maxTopicTime=1, maxTopicID=1, topics=[], recurse=False)
-    klass.currentTopicList = klass.etiConn.getTopicList(topics=[], recurse=False)
+    klass.emptyTopicList = klass.etiConn.getTopicList(maxTopicTime=1, maxTopicID=1)
+    klass.currentTopicList = klass.etiConn.getTopicList()
+    klass.anonymousTopicList = klass.etiConn.getTopicList(allowedTags=["Anonymous"])
     # klass.archivedTopicList = klass.etiConn.getTopicList(archived=True, boardID=42, pageNum=1, topics=[], recurse=True)
+
+    klass.cyberlightTopicDict = klass.etiConn.getTopicInfoFromListing(klass.cyberlightTopicListPage)
+    klass.anonymousTopicDict = klass.etiConn.getTopicInfoFromListing(klass.anonymousTopicListPage)
+
+    klass.activeTagList = klass.etiConn.getActiveTags()
+    klass.lueTagInfo = klass.etiConn.getTagInfo("LUE")
     
   def testLogin(self):
     assert not self.etiConn.login("FAKE USERNAME", "FAKE PASSWORD")
@@ -196,7 +207,7 @@ class testAlbatrossClass(object):
   def testgetLatestTopicID(self):
     assert not self.etiConn.getLatestTopicID(self.emptyTopicSearchList)
     assert isinstance(self.etiConn.getLatestTopicID(self.currentTopicListPage), int) and self.etiConn.getLatestTopicID(self.currentTopicListPage) > 0
-    assert isinstance(self.etiConn.getLatestTopicID(self.cyberlightTopicSearchList), int) and self.etiConn.getLatestTopicID(self.cyberlightTopicSearchList) > 0
+    assert isinstance(self.etiConn.getLatestTopicID(self.cyberlightTopicListPage), int) and self.etiConn.getLatestTopicID(self.cyberlightTopicListPage) > 0
     
   def testgetTopicDateUnix(self):
     assert not self.etiConn.getTopicDateUnix("")
@@ -204,20 +215,22 @@ class testAlbatrossClass(object):
     assert self.etiConn.getTopicDateUnix(self.etiConn.getTopicInfoFromListing(self.currentTopicListPage)['lastPostTime'])
     
   def testgetTopicInfoFromListing(self):
-    cyberlightTopicDict = self.etiConn.getTopicInfoFromListing(self.cyberlightTopicSearchList)
-    print cyberlightTopicDict
-
-    print self.cyberlightTopicSearchList
-
     assert not self.etiConn.getTopicInfoFromListing(self.emptyTopicSearchList)
     assert isinstance(self.etiConn.getTopicInfoFromListing(self.currentTopicListPage), dict) and len(self.etiConn.getTopicInfoFromListing(self.currentTopicListPage)) > 0
-    assert isinstance(cyberlightTopicDict, dict) and len(cyberlightTopicDict) > 0 and 'tags' in cyberlightTopicDict and 'NWS' in cyberlightTopicDict['tags']
+    assert isinstance(self.cyberlightTopicDict, dict) and len(self.cyberlightTopicDict) > 0 and 'tags' in self.cyberlightTopicDict and 'NWS' in self.cyberlightTopicDict['tags']
     
   def testgetTopicList(self):
-    assert not self.emptyTopicList
+    assert isinstance(self.emptyTopicList, list) and len(self.emptyTopicList) == 0
     assert isinstance(self.currentTopicList, list) and len(self.currentTopicList) > 0
-    
+    assert isinstance(self.anonymousTopicList, list) and len(self.anonymousTopicList) > 0
+
   def testsearchTopics(self):
-    assert not self.emptyTopicSearch
+    assert isinstance(self.emptyTopicSearch, list) and len(self.emptyTopicSearch) == 0
+    assert isinstance(self.contradictoryTopicSearch, list) and len(self.contradictoryTopicSearch) == 0
     assert isinstance(self.nwsTopicSearch, list) and len(self.nwsTopicSearch) > 0
     assert isinstance(self.archivesTopicSearch, list) and len(self.archivesTopicSearch) > 0
+    assert isinstance(self.multiTagTopicSearch, list) and len(self.multiTagTopicSearch) > 0
+    assert isinstance(self.anonymousTopicSearch, list) and len(self.anonymousTopicSearch) > 0
+
+  def testgetActiveTags(self):
+    assert isinstance(self.activeTagList, list) and len(self.activeTagList) > 0

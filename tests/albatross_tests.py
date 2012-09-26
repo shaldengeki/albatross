@@ -55,7 +55,11 @@ class testAlbatrossClass(object):
     klass.anonymousTopicDict = klass.etiConn.getTopicInfoFromListing(klass.anonymousTopicListPage)
 
     klass.activeTagList = klass.etiConn.getActiveTags()
+
+    klass.emptyTagInfo = klass.etiConn.getTagInfo("paoisjdfpoasijdfpoasidjfpaosijf")
     klass.lueTagInfo = klass.etiConn.getTagInfo("LUE")
+    klass.tvTagInfo = klass.etiConn.getTagInfo("TV")
+
     
   def testLogin(self):
     assert not self.etiConn.login("FAKE USERNAME", "FAKE PASSWORD")
@@ -234,3 +238,8 @@ class testAlbatrossClass(object):
 
   def testgetActiveTags(self):
     assert isinstance(self.activeTagList, list) and len(self.activeTagList) > 0
+
+  def testgetTagInfo(self):
+    assert not self.emptyTagInfo
+    assert isinstance(self.lueTagInfo, dict) and self.lueTagInfo['name'] == "LUE" and len(self.lueTagInfo['staff']) > 0 and len(self.lueTagInfo['description']) > 0
+    assert isinstance(self.tvTagInfo, dict) and self.tvTagInfo['name'] == "TV" and len(self.tvTagInfo['staff']) > 0 and len(self.tvTagInfo['description']) > 0 and len(self.tvTagInfo['related_tags']) > 0

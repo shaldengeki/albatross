@@ -225,6 +225,7 @@ class Albatross(object):
             return False
       else:
         return response
+    pageRequest.close()
     return False
     
   def checkLoggedIn(self):
@@ -233,7 +234,7 @@ class Albatross(object):
     Returns boolean value reflecting this.
     """
     
-    mainPageHTML = self.getPage('http://endoftheinter.net/main.php', authed=False)
+    mainPageHTML = self.getPage('https://endoftheinter.net/main.php', authed=False)
     if not mainPageHTML or 'stats.php">Stats</a>' not in mainPageHTML:
       return False
     else:
@@ -244,7 +245,7 @@ class Albatross(object):
     Checks to ensure that the cookieString we used to make our request is still valid.
     If it's not, then there will be an error message in the HTML returned by the request.
     """
-    if text is '' or "Sie haben das Ende des Internets erreicht." in text:
+    if not text or "Sie haben das Ende des Internets erreicht." in text:
       return False
     return True
     
@@ -253,29 +254,11 @@ class Albatross(object):
     Grabs a link's page, given its linkID, and returns the HTML.
     Upon failure returns False.
     """
-    for x in range(retries):
-      linkPage = pycurl.Curl()
-      response = cStringIO.StringIO()
-      linkPage.setopt(pycurl.COOKIE, str(self.cookieString))
-      linkPage.setopt(pycurl.URL, 'https://links.endoftheinter.net/linkme.php?l=' + str(linkID) + '&page=' + str(pageNum))
-      linkPage.setopt(pycurl.USERAGENT, 'Albatross')
-      linkPage.setopt(pycurl.SSL_VERIFYPEER, False)
-      linkPage.setopt(pycurl.SSL_VERIFYHOST, False)
-      linkPage.setopt(pycurl.WRITEFUNCTION, response.write)
-      try:
-        linkPage.perform()
-        linkPage.close()
-      except:
-        continue
-      linkPageHTML = response.getvalue()
-      if self.checkPageAuthed(linkPageHTML):
-        return linkPageHTML
-      else:
-        if self.reauthenticate():
-          return self.getLinkPage(linkID, pageNum, retries=retries-x-1)
-        else:
-          return False
-    return False
+    linkPageHTML = self.getPage('https://links.endoftheinter.net/linkme.php?l=' + str(linkID) + '&page=' + str(pageNum))
+    if self.checkPageAuthed(linkPageHTML):
+      return linkPageHTML
+    else:
+      return False
     
   def getLinkTitle(self, text):
     """
@@ -576,14 +559,14 @@ class Albatross(object):
     """
     Returns a list of dicts for the newest links on links.php?mode=new.
     """
-    newLinksPage = self.getPage('http://links.endoftheinter.net/links.php?mode=new')
+    newLinksPage = self.getPage('https://links.endoftheinter.net/links.php?mode=new')
     if not newLinksPage:
       return False
     links = self.getLinkListingDicts(newLinksPage)
     if recurse:
       linkNumPages = self.getTopicNumPages(newLinksPage)
       for pageNum in range(2, int(linkNumPages)+1):
-        self.parallelCurl.startrequest('http://links.endoftheinter.net/links.php?mode=new&page=' + str(pageNum), self.appendLinkPageListingDicts, [links])
+        self.parallelCurl.startrequest('https://links.endoftheinter.net/links.php?mode=new&page=' + str(pageNum), self.appendLinkPageListingDicts, [links])
       self.parallelCurl.finishallrequests()
     return links
     
@@ -639,29 +622,11 @@ class Albatross(object):
       subdomain="archives"
     else:
       subdomain="boards"
-    for x in range(retries):
-      topicPage = pycurl.Curl()
-      response = cStringIO.StringIO()
-      topicPage.setopt(pycurl.COOKIE, str(self.cookieString))  
-      topicPage.setopt(pycurl.USERAGENT, 'Albatross')
-      topicPage.setopt(pycurl.URL, 'http://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum))
-      topicPage.setopt(pycurl.SSL_VERIFYPEER, False)
-      topicPage.setopt(pycurl.SSL_VERIFYHOST, False)
-      topicPage.setopt(pycurl.WRITEFUNCTION, response.write)
-      try:
-        topicPage.perform()
-        topicPage.close()
-      except:
-        continue
-      topicPageHTML = response.getvalue()
-      if self.checkPageAuthed(topicPageHTML):
-        return topicPageHTML
-      else:
-        if self.reauthenticate():
-          return self.getTopicPage(topicID, pageNum=pageNum, archived=archived, userID=userID, retries=retries-x-1)
-        else:
-          return False
-    return False
+    topicPageHTML = self.getPage('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(topicID) + '&u=' + str(userID) + '&page=' + str(pageNum))
+    if self.checkPageAuthed(topicPageHTML):
+      return topicPageHTML
+    else:
+      return False
     
   def appendTopicPagePosts(self, text, url, curlHandle, paramArray):
     """
@@ -806,7 +771,7 @@ class Albatross(object):
     
     # assemble the search query and request this search page's topic listing.
     searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTopicTime)), ('t', str(maxTopicID))])
-    topicPageHTML = self.getPage('http://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowedTags=allowedTags, forbiddenTags=forbiddenTags) + '?' + searchQuery)
+    topicPageHTML = self.getPage('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowedTags=allowedTags, forbiddenTags=forbiddenTags) + '?' + searchQuery)
     
     # split the topic listing string into a list so that one topic is in each element.
     topicListingHTML = self.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)

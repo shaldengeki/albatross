@@ -246,7 +246,7 @@ class Albatross(object):
       except:
         continue
       # check to see if ETI is acting up.
-      return requestCode in {0:1, 404:1, 500:1, 501:1, 502:1, 503:1, 504:1}
+      return requestCode not in {0:1, 404:1, 500:1, 501:1, 502:1, 503:1, 504:1}
     return False
 
   def checkLoggedIn(self):

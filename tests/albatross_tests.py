@@ -60,7 +60,10 @@ class testAlbatrossClass(object):
     klass.lueTagInfo = klass.etiConn.getTagInfo("LUE")
     klass.tvTagInfo = klass.etiConn.getTagInfo("TV")
 
-    
+  def testcheckETIUp(self):
+    ''' there is no good way to test this ugh '''
+    assert self.etiConn.checkETIUp()
+
   def testLogin(self):
     assert not self.etiConn.login("FAKE USERNAME", "FAKE PASSWORD")
     assert self.etiConn.login(self.username, self.password)

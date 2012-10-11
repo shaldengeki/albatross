@@ -166,31 +166,23 @@ class Albatross(object):
     Uses cURL to read a page's headers.
     """
     for x in range(retries): # Limit the number of retries.
-      response = cStringIO.StringIO()
+      header = cStringIO.StringIO()
       pageRequest = pycurl.Curl()
       
       pageRequest.setopt(pycurl.NOBODY, True)
-      pageRequest.setopt(pycurl.HEADER, True)
       pageRequest.setopt(pycurl.SSL_VERIFYPEER, False)
       pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
       pageRequest.setopt(pycurl.URL, url)
       pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
       pageRequest.setopt(pycurl.COOKIE, str(self.cookieString))
-      pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
+      pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
       try:
         pageRequest.perform()
         pageRequest.close()
-        response = response.getvalue()
+        header = header.getvalue()
       except:
         continue
-      if self.checkPageAuthed(response):
-        return response
-      else:
-        if self.reauthenticate():
-          return self.getPageHeader(url, retries=retries-x-1)
-        else:
-          return False
-    return False  
+    return header
 
   def getPage(self, url, retries=10, authed=True):
     """
@@ -201,6 +193,7 @@ class Albatross(object):
     
     for x in range(retries): # Limit the number of retries.
       response = cStringIO.StringIO()
+      header = cStringIO.StringIO()
       pageRequest = pycurl.Curl()
       
       pageRequest.setopt(pycurl.SSL_VERIFYPEER, False)
@@ -209,12 +202,17 @@ class Albatross(object):
       pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
       pageRequest.setopt(pycurl.COOKIE, str(self.cookieString))
       pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
+      pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
       try:
         pageRequest.perform()
+        requestCode = pageRequest.getinfo(pageRequest.HTTP_CODE)
         pageRequest.close()
         response = response.getvalue()
       except:
         continue
+      # check to see if ETI is acting up.
+      if requestCode in {0:1, 404:1, 500:1, 501:1, 502:1, 503:1, 504:1}:
+        return False
       if authed:
         if self.checkPageAuthed(response):
           return response
@@ -225,9 +223,32 @@ class Albatross(object):
             return False
       else:
         return response
-    pageRequest.close()
     return False
-    
+  def checkETIUp(self, retries=10):
+    """
+    Checks to see if ETI is having server / DNS issues.
+    Returns a boolean.
+    """
+    for x in range(retries): # Limit the number of retries.
+      header = cStringIO.StringIO()
+      pageRequest = pycurl.Curl()
+      
+      pageRequest.setopt(pycurl.SSL_VERIFYPEER, False)
+      pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
+      pageRequest.setopt(pycurl.URL, "https://endoftheinter.net/index.php")
+      pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
+      pageRequest.setopt(pycurl.COOKIE, str(self.cookieString))
+      pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
+      try:
+        pageRequest.perform()
+        requestCode = pageRequest.getinfo(pageRequest.HTTP_CODE)
+        pageRequest.close()
+      except:
+        continue
+      # check to see if ETI is acting up.
+      return requestCode in {0:1, 404:1, 500:1, 501:1, 502:1, 503:1, 504:1}
+    return False
+
   def checkLoggedIn(self):
     """
     Checks if the current cookie string is still valid.

@@ -930,15 +930,14 @@ class Albatross(object):
     tagLinks = tagLinksHTML.split('&nbsp;&bull; ')
     return [self.getEnclosedString(text, '">', '</a>').strip() for text in tagLinks]
 
-  def getTagInfo(self, name):
+  def getTagInfoFromAjax(self, text):
     """
-    Takes the name of a tag and returns all the information that the currently signed-in user can view about it.
+    Parses the JSON output given by ETI's Ajax tag interface.
+    Returns a dict of tag properties.
     """
-    tagInfoParams = urllib.urlencode([('e', ''), ('q', str(name).replace(" ", "_")), ('n', '1')])
-    tagInfoPage = self.getPage("https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams)
-    tagInfoPage = tagInfoPage[1:]
+    text = text[1:]
     try:
-      tagJSON = json.loads(tagInfoPage)
+      tagJSON = json.loads(text)
     except ValueError:
       print "Warning: invalid JSON object provided by ETI ajax tag interface."
       raise
@@ -979,3 +978,35 @@ class Albatross(object):
       if '2' in tagInteractions:
          tag['related_tags'] = tagInteractions['2'].keys()
     return tag
+
+  def appendTagInfoTag(self, text, url, curlHandle, tagList):
+    """
+    Takes the HTML of ETI's ajax tag interface and parses info from it.
+    Appends the resultant tag array to 
+    """
+    if not self.checkPageAuthed(text):
+      if self.reauthenticate():
+        self.parallelCurl.startrequest(url, self.appendTagInfoTag, tagList)
+        return
+    # parse the text given into a tag object to append to tagList.
+    tag = self.getTagInfoFromAjax(text)
+    if tag:
+      tagList.append(tag)
+
+  def getTagInfo(self, names, tagList=False):
+    """
+    Takes the name(s) of tag(s) and returns all the information that the currently signed-in user can view about the tag(s).
+    """
+    if isinstance(names, basestring):
+      names = [names]
+    if not tagList:
+      tagList = []
+
+    for name in names:
+      tagInfoParams = urllib.urlencode([('e', ''), ('q', str(name).replace(" ", "_")), ('n', '1')])
+      self.parallelCurl.startrequest("https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams, self.appendTagInfoTag, tagList)
+    self.parallelCurl.finishallrequests()
+
+    if len(tagList) == 1:
+      tagList = tagList[0]
+    return tagList

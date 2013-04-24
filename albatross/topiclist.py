@@ -7,9 +7,11 @@
 
     TopicList - Topic list information retrieval and manipulation.
 '''
+import calendar
 import datetime
 import pytz
 import re
+import sys
 import urllib
 
 import albatross
@@ -33,6 +35,11 @@ class TopicList(object):
     self.topics[index] = value
   def __len__(self):
     return len(self.topics)
+  def __iter__(self):
+    for topic in self.topics:
+      yield topic
+  def __reversed__(self):
+    return self.topics[::-1]
 
   def formatTagQueryString(self, allowedTags=[], forbiddenTags=[]):
     """
@@ -74,7 +81,7 @@ class TopicList(object):
       lastPostTime = False
     return dict([('id', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('user', {'id': user['userID'], 'name': user['username']}), ('postCount', int(thisTopic.group('postCount'))), ('newPosts', newPosts), ('lastPostTime', lastPostTime), ('closed', closedTopic), ('tags', tags)])
 
-  def search(self, query="", allowedTags=[], forbiddenTags=[], maxTopicTime="", maxTopicID="", topicsActiveSince=False, topics=None, recurse=False):
+  def search(self, query="", allowedTags=[], forbiddenTags=[], maxTopicTime=None, maxTopicID="", topicsActiveSince=None, topics=None, recurse=False):
     """
     Searches for topics using given parameters, and returns a list of dicts of returned topics.
     By default, recursively iterates through every page of search results.
@@ -82,34 +89,44 @@ class TopicList(object):
     """
     if topics is None:
       self._topics = []
-    
-    # check to see if we need to request a page.
-    if topicsActiveSince and maxTopicTime and maxTopicTime <= topicsActiveSince:
-      return self
-    
-    # assemble the search query and request this search page's topic listing.
-    searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTopicTime)), ('t', str(maxTopicID))])
-    topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowedTags=allowedTags, forbiddenTags=forbiddenTags) + '?' + searchQuery).html
-    
-    # split the topic listing string into a list so that one topic is in each element.
-    topicListingHTML = albatross.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
-    if not topicListingHTML:
-      return self
-    topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
-    
-    originalTopicsNum = len(self._topics)
-    for topic in topicListingHTML:
-      topicInfo = self.parse(topic)
-      if topicInfo and (not topicsActiveSince or topicInfo['lastPostTime'] > topicsActiveSince):
-        self._topics.append(Topic(self.connection, topicInfo['id']).set(topicInfo))
-    
-    if len(self._topics) == originalTopicsNum:
-      return self
 
-    if not recurse:
-      return self
-    # we can't parallelize this, since we have no way of predicting the next ts and t parameters.
-    return True and self.search(query=query, maxTopicTime=self._topics[-1]['lastPostTime'], maxTopicID=self._topics[-1]['id'], topicsActiveSince=topicsActiveSince, topics=self._topics, recurse=recurse) or False
+    if maxTopicTime is None:
+      maxTopicTime = datetime.datetime.now(tz=pytz.timezone('America/Chicago'))
+    if topicsActiveSince is None:
+      topicsActiveSince = pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1))
+
+    while maxTopicTime > topicsActiveSince:
+      # assemble the search query and request this search page's topic listing.
+      if isinstance(maxTopicTime, datetime.datetime):
+        maxTopicTime = calendar.timegm(maxTopicTime.utctimetuple())
+      searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTopicTime)), ('t', str(maxTopicID))])
+      topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowedTags=allowedTags, forbiddenTags=forbiddenTags) + '?' + searchQuery).html
+      
+      # split the topic listing string into a list so that one topic is in each element.
+      topicListingHTML = albatross.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
+      if not topicListingHTML:
+        self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
+        return self
+      topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
+      
+      originalTopicsNum = len(self._topics)
+      for topic in topicListingHTML:
+        topicInfo = self.parse(topic)
+        if topicInfo and (not topicsActiveSince or topicInfo['lastPostTime'] > topicsActiveSince):
+          self._topics.append(Topic(self.connection, topicInfo['id']).set(topicInfo))
+      
+      if len(self._topics) == originalTopicsNum:
+        self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
+        return self
+
+      if not recurse:
+        self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
+        return self
+      # we can't parallelize this, since we have no way of predicting the next ts and t parameters.
+      maxTopicTime = self._topics[-1].lastPostTime
+      maxTopicID = self._topics[-1].id
+    self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
+    return self
 
   @property
   def topics(self):

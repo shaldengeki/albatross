@@ -67,9 +67,18 @@ class testTopicClass(object):
 
   @raises(albatross.InvalidTopicException)
   def testgetInvalidTopicPosts(self):
-    self.invalidTopic.posts
+    self.invalidTopic.posts()
 
   def testgetTopicPosts(self):
-    assert isinstance(self.validTopic.posts, list) and self.validTopic.posts
-    assert isinstance(self.starcraftTopic.posts, list) and self.starcraftTopic.posts and len(self.starcraftTopic.posts) == 2
-    assert isinstance(self.archivedTopic.posts, list) and self.archivedTopic.posts and len(self.archivedTopic.posts) == 106
+    assert isinstance(self.validTopic.posts(), list) and self.validTopic.posts()
+    assert isinstance(self.starcraftTopic.posts(), list) and self.starcraftTopic.posts() and len(self.starcraftTopic.posts()) == 2
+    assert isinstance(self.archivedTopic.posts(), list) and self.archivedTopic.posts() and len(self.archivedTopic.posts()) == 106
+
+  @raises(albatross.InvalidTopicException)
+  def testgetInvalidTopicTags(self):
+    self.invalidTopic.tags
+
+  def testgetTopicTags(self):
+    print self.starcraftTopic.tags._tagNames
+    assert isinstance(self.validTopic.tags, albatross.TagList) and "LUE" in self.validTopic.tags._tagNames
+    assert isinstance(self.starcraftTopic.tags, albatross.TagList) and len(self.starcraftTopic.tags) == 3 and "Archived" in self.starcraftTopic.tags._tagNames and "Starcraft" in self.starcraftTopic.tags._tagNames and "LUE" in self.starcraftTopic.tags._tagNames

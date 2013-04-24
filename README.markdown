@@ -53,13 +53,13 @@ You can fetch topic posts like so:
     oneTopic = albatross.Topic(etiConn, 7823107)
     # alternatively:
     oneTopic = etiConn.topics.search(query="Ritsu's", allowedTags=["Anime"])[0]
-    print oneTopic.posts[0]
+    print oneTopic.posts()[0]
 
 And from there, post info like so:
     
     onePost = albatross.Post(etiConn, 104123023, oneTopic)
     # alternatively:
-    onePost = oneTopic.posts[0]
+    onePost = oneTopic.posts()[0]
     print onePost
 
 Tests

@@ -17,6 +17,7 @@ import albatross
 import connection
 import page
 import post
+import taglist
 
 class ArchivedTopicException(Exception):
   pass
@@ -32,12 +33,17 @@ class Topic(object):
     self.connection = conn
     self.id = int(id)
     self.page = page
+    self._closed = None
     self._archived = None
     self._date = None
     self._title = None
+    self._user = None
     self._pages = None
     self._posts = None
     self._postIDs = {}
+    self._postCount = None
+    self._tags = None
+    self._lastPostTime = None
 
   def __str__(self):
     if self._date is None:
@@ -45,8 +51,9 @@ class Topic(object):
     return "\n".join([
       "ID: " + str(self.id) + " (Archived: " + str(self.archived) + ")",
       "Title: " + str(self.title),
+      "Tags: " + ", ".join(self.tags._tagNames),
       "Page: " + str(self.page) + "/" + str(self.pages),
-      "Posts:" + str(len(self.posts)),
+      "Posts:" + str(self.postCount),
       "Date: " + self.date.strftime("%m/%d/%Y %I:%M:%S %p")
       ])
 
@@ -72,7 +79,8 @@ class Topic(object):
       # topic is archived.
       if self._archived is None:
         self._archived = True
-        topicPage = self.connection.page('https://archives.endoftheinter.net/showmessages.php?topic=' + str(self.id))
+        subdomain = "archives"
+        topicPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(self.id))
       elif self._archived is False:
         raise ArchivedTopicException("ID " + str(self.id))
     elif self._archived is None:
@@ -84,7 +92,21 @@ class Topic(object):
       # hooray, start pulling info.
       self._title = albatross.getEnclosedString(topicPage.html, r'\<h1\>', r'\<\/h1\>')
       self._date = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(albatross.getEnclosedString(topicPage.html, r'<b>Posted:</b> ', r' \| '), "%m/%d/%Y %I:%M:%S %p"))
+      userID = int(albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))
+      username = albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=' + str(userID) + r'">', r'</a>')
+      self._user = {'id': userID, 'name': username}
       self._pages = int(albatross.getEnclosedString(topicPage.html, r'">(First Page</a> \| )?(<a href)?(\S+)?(Previous Page</a> \| )?Page \d+ of <span>', r'</span>'))
+      self._closed = self._archived
+      self._tags = taglist.TagList(self.connection, tags=[albatross.getEnclosedString(tagEntry, '<a href="/topics/', r'">') for tagEntry in albatross.getEnclosedString(topicPage.html, r"<h2><div", r"</div></h2>").split(r"</a>")[:-1] if not tagEntry.startswith(' <span')])
+
+      lastPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(self.id) + '&page=' + str(self._pages))
+      if lastPage.authed:
+        lastPagePosts = self.getPagePosts(lastPage.html)
+        lastPost = post.Post(self.connection, 0, self)
+        lastPost = lastPost.set(lastPost.parse(lastPagePosts[-1]))
+        self._lastPostTime = lastPost.date
+      else:
+        raise connection.UnauthorizedException("ID " + str(self.id))
     else:
       raise connection.UnauthorizedException("ID " + str(self.id))
 
@@ -110,10 +132,34 @@ class Topic(object):
     return self._archived
 
   @property
+  def closed(self):
+    if self._closed is None:
+      self.load()
+    return self._closed
+
+  @property
   def pages(self):
     if self._pages is None:
       self.load()
     return self._pages
+
+  @property
+  def tags(self):
+    if self._tags is None:
+      self.load()
+    return self._tags
+
+  @property
+  def user(self):
+    if self._user is None:
+      self.load()
+    return self._user
+
+  @property
+  def lastPostTime(self):
+    if self._lastPostTime is None:
+      self.load()
+    return self._lastPostTime
 
   def getPagePosts(self, text):
     """
@@ -169,7 +215,6 @@ class Topic(object):
 
     self._posts = sorted(self._posts, key=lambda postObject: postObject.id)
 
-  @property
   def posts(self, user=None, page=None):
     if self._posts is None:
       self.getPosts()
@@ -177,3 +222,9 @@ class Topic(object):
     if page is not None:
       return filteredPosts[((page-1)*50):(page*50)]
     return filteredPosts
+
+  @property
+  def postCount(self, user=None, page=None):
+    if self._postCount is None:
+      self._postCount = len(self.posts())
+    return self._postCount

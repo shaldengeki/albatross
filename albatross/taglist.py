@@ -37,6 +37,11 @@ class TagList(object):
     self.tags[index] = value
   def __len__(self):
     return len(self.tags)
+  def __iter__(self):
+    for tagObj in self.tags:
+      yield tagObj
+  def __reversed__(self):
+    return self.tags[::-1]
 
   def appendTag(self, text, url, curlHandle, tagList):
     """
@@ -80,3 +85,8 @@ class TagList(object):
     if self._tags is None:
       self.load()
     return self._tags
+
+  def append(self, appTag):
+    if appTag.name not in self._tagNames:
+      self._tagNames.append(appTag.name)
+      self._tags.append(appTag)

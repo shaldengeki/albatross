@@ -29,7 +29,7 @@ class testTopicClass(object):
 
   @raises(albatross.InvalidTopicException)
   def testcheckTopicInvalid(self):
-    self.invalidTopic.fetchInfo()
+    self.invalidTopic.load()
     
   def testcheckArchivedTopic(self):
     assert isinstance(self.archivedTopic.archived, bool) and self.archivedTopic.archived

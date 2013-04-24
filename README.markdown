@@ -34,22 +34,33 @@ Getting Started
 To get started, simply install Albatross by doing `sudo python setup.py install`, and do:
 
     import albatross
-    etiConn = albatross.Albatross(username="LlamaGuy", password="hunter2")
-    sampleTopics = etiConn.searchTopics(query="luelinks")
-    print str(sampleTopics[0])
+    etiConn = albatross.Connection(username="LlamaGuy", password="hunter2")
+    sampleTopics = etiConn.topics.search(query="luelinks", allowedTags=["LUE"], forbiddenTags=["NWS"])
+    print sampleTopics[0]
 
 Alternatively, you can also provide a cookie string to Albatross in lieu of a username and password:
 
-    import albatross
-    etiConn = albatross.Albatross(cookieString="your-cookie-string-here", cookieFile="your-cookie=file-here.txt")
-    sampleTopics = etiConn.searchTopics(query="luelinks")
-    print str(sampleTopics[0])
+    etiConn = albatross.Connection(cookieString="your-cookie-string-here", cookieFile="your-cookie=file-here.txt")
 
 By default, if you specify a username+password or cookieString+cookieFile pair upon construction, Albatross will attempt to re-authenticate with ETI if it detects that you have been logged out. If you've provided a username+password, it will attempt to log you back into ETI. If you've provided a cookiestring+file, it will reload the cookiestring from the provided file. You can disable this behavior when you call the constructor, like so:
 
-    etiConn = albatross.Albatross(username="LlamaGuy", password="hunter2", reauth=False)
+    etiConn = albatross.Connection(username="LlamaGuy", password="hunter2", reauth=False)
 
 This behavior is disabled by default if you specify a cookieString but no cookieFile, or if cookieFile does not exist on your system.
+
+You can fetch topic posts like so:
+    
+    oneTopic = albatross.Topic(etiConn, 7823107)
+    # alternatively:
+    oneTopic = etiConn.topics.search(query="Ritsu's", allowedTags=["Anime"])[0]
+    print oneTopic.posts[0]
+
+And from there, post info like so:
+    
+    onePost = albatross.Post(etiConn, 104123023, oneTopic)
+    # alternatively:
+    onePost = oneTopic.posts[0]
+    print onePost
 
 Tests
 -----

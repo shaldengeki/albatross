@@ -13,7 +13,6 @@ import pycurl
 import pyparallelcurl
 import re
 import urllib
-import urllib2
 
 import albatross
 from page import Page
@@ -41,6 +40,8 @@ class Connection(object):
     self.loginSite = loginSite if loginSite is not None else albatross.SITE_MAIN
     self.cookieFile = cookieFile
     self.num_requests = num_requests
+    self.parallelCurlOptions = {}
+    self.parallelCurl = None
     if username and password:
       self.cookieString = self.login()
       self.reauth = True

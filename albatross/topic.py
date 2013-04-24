@@ -28,8 +28,8 @@ class Topic(object):
   '''
   Topic-loading object for albatross.
   '''
-  def __init__(self, connection, id, page=1):
-    self.connection = connection
+  def __init__(self, conn, id, page=1):
+    self.connection = conn
     self.id = int(id)
     self.page = page
     self._archived = None

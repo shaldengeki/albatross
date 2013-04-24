@@ -11,7 +11,6 @@ import datetime
 import pytz
 import re
 import urllib
-import urllib2
 
 import albatross
 from topic import Topic
@@ -23,11 +22,15 @@ class TopicList(object):
   '''
   Topic list-loading object for albatross.
   '''
-  def __init__(self, connection):
-    self.connection = connection
+  def __init__(self, conn):
+    self.connection = conn
     self._topics = []
   def __getitem__(self, index):
     return self.topics[index]
+  def __delitem__(self, index):
+    del self.topics[index]
+  def __setitem__(self, index, value):
+    self.topics[index] = value
   def __len__(self):
     return len(self.topics)
 

@@ -10,8 +10,6 @@
 
 import cStringIO
 import pycurl
-import urllib
-import urllib2
 
 import albatross
 import connection
@@ -23,8 +21,8 @@ class Page(object):
   '''
   Basic page and header-loading object for albatross.
   '''
-  def __init__(self, connection, url=None, needsAuth=True):
-    self.connection = connection
+  def __init__(self, conn, url=None, needsAuth=True):
+    self.connection = conn
     self.url = url
     self.needsAuth = needsAuth
     self._header = None

@@ -8,16 +8,7 @@
     Connection - provides primary interface to ETI, and spawns topics / tags / links / users / etc.
 '''
 
-import cStringIO
-import os
 import re
-import urllib
-import urllib2
-
-import pycurl
-import pyparallelcurl
-
-import albatross
 
 SITE_MAIN = {"url":"https://endoftheinter.net/","fields":{"username":"b","password":"p"}}
 SITE_MOBILE = {"url":"https://iphone.endoftheinter.net/","fields":{"username":"username","password":"password"}}

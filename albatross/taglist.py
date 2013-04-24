@@ -20,17 +20,21 @@ class TagList(object):
   '''
   Tag list-loading object for albatross.
   '''
-  def __init__(self, connection, tags=None, active=False):
-    self.connection = connection
+  def __init__(self, conn, tags=None, active=False):
+    self.connection = conn
     self._tagNames = tags
     self._tags = None
     if active and tags is None:
       mainPage = page.Page(self.connection, "https://endoftheinter.net/main.php")
-      tagLinksHTML = albatross.getEnclosedString(mainPage.html, '<div style\="font\-size\: 14px">', '</div>', multiLine=True)
+      tagLinksHTML = albatross.getEnclosedString(mainPage.html, r'<div style="font-size: 14px">', r'</div>', multiLine=True)
       tagLinks = tagLinksHTML.split('&nbsp;&bull; ')
       self._tagNames = [albatross.getEnclosedString(text, '">', '</a>').strip() for text in tagLinks]
   def __getitem__(self, index):
     return self.tags[index]
+  def __delitem__(self, index):
+    del self.tags[index]
+  def __setitem__(self, index, value):
+    self.tags[index] = value
   def __len__(self):
     return len(self.tags)
 

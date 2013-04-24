@@ -8,10 +8,7 @@
     Tag - Tag information retrieval and manipulation.
 '''
 
-import datetime
 import json
-import pytz
-import re
 import urllib
 
 import albatross
@@ -26,8 +23,8 @@ class Tag(object):
   '''
   Tag-loading object for albatross.
   '''
-  def __init__(self, connection, name):
-    self.connection = connection
+  def __init__(self, conn, name):
+    self.connection = conn
     self.name = name
     self._staff = None
     self._description = None
@@ -87,11 +84,11 @@ class Tag(object):
     tag['related'] = tag['forbidden'] = tag['dependent'] = []
     if len(tagInteractions) > 0:
       if '0' in tagInteractions:
-         tag['forbidden'] = [Tag(self.connection, key) for key in tagInteractions['0'].keys()]
+        tag['forbidden'] = [Tag(self.connection, key) for key in tagInteractions['0'].keys()]
       if '1' in tagInteractions:
-         tag['dependent'] = [Tag(self.connection, key) for key in tagInteractions['1'].keys()]
+        tag['dependent'] = [Tag(self.connection, key) for key in tagInteractions['1'].keys()]
       if '2' in tagInteractions:
-         tag['related'] = [Tag(self.connection, key) for key in tagInteractions['2'].keys()]
+        tag['related'] = [Tag(self.connection, key) for key in tagInteractions['2'].keys()]
     return tag
 
   def load(self):

@@ -24,8 +24,8 @@ class Post(object):
   '''
   Post-loading object for albatross.
   '''
-  def __init__(self, connection, id, topic):
-    self.connection = connection
+  def __init__(self, conn, id, topic):
+    self.connection = conn
     self.id = int(id)
     self.topic = topic
     self._date = None

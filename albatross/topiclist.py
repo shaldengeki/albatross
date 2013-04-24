@@ -16,6 +16,7 @@ import urllib
 
 import albatross
 from topic import Topic
+from taglist import TagList
 
 class TopicListException(Exception):
   pass
@@ -72,9 +73,9 @@ class TopicList(object):
     if thisTopic.group('closed'):
       closedTopic = True
     if thisTopic.group('tags'):
-      tags = [re.search(r'\"\>(?P<name>[^<]+)', tag).group('name') for tag in thisTopic.group('tags').split("</a>") if tag]
+      tags = TagList(self.connection, tags=[re.search(r'\"\>(?P<name>[^<]+)', tag).group('name') for tag in thisTopic.group('tags').split("</a>") if tag])
     else:
-      tags = []
+      tags = TagList(self.connection, tags=[])
     if thisTopic.group('lastPostTime'):
       lastPostTime = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(thisTopic.group('lastPostTime'), "%m/%d/%Y %H:%M"))
     else:

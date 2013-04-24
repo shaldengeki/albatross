@@ -38,12 +38,12 @@ class Post(object):
       self.load()
     return "\n".join([
       "ID: " + str(self.id),
-      "User: " + str(self.user['name']) + " (" + str(self.user['id']) + ")",
+      "User: " + unicode(self.user['name']) + " (" + str(self.user['id']) + ")",
       "Date: " + self.date.strftime("%m/%d/%Y %I:%M:%S %p"),
       "Post:",
-      self.html,
+      unicode(self.html),
       "---",
-      self.sig
+      unicode(self.sig)
       ])
 
   def set(self, attrDict):
@@ -69,7 +69,7 @@ class Post(object):
       postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'</td>', multiLine=True, greedy=True)
       postDict['sig'] = ""
     if not postDict['html']:
-      raise MalformedPostException("ID:",str(self.id))
+      raise MalformedPostException(str(self))
     return postDict
 
   def load(self):

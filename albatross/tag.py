@@ -60,12 +60,12 @@ class Tag(object):
 
     tag['staff'] = []
 
-    moderatorText = albatross.getEnclosedString(tagJSON[1][0], "<b>Moderators: </b>", "<br /><b>Administrators:")
+    moderatorText = albatross.getEnclosedString(tagJSON[1][0], r"<b>Moderators: </b>", r"<br /><b>Administrators:")
     if moderatorText:
       descriptionEndTag = "<br /><b>Moderators:"
       moderatorTags = moderatorText.split(", ")
       for moderator in moderatorTags:
-        tag['staff'].append({'name': str(albatross.getEnclosedString(moderator, '\">', "</a>")), 'id': int(albatross.getEnclosedString(moderator, "\?user\=", '\">')), 'role':'moderator'})
+        tag['staff'].append({'name': str(albatross.getEnclosedString(moderator, r'">', r"</a>")), 'id': int(albatross.getEnclosedString(moderator, r"\?user=", r'">')), 'role':'moderator'})
     else:
       descriptionEndTag = "<br /><b>Administrators:"
 
@@ -73,8 +73,8 @@ class Tag(object):
     if administratorText:
       administratorTags = administratorText.split(", ")
       for administrator in administratorTags:
-        tag['staff'].append({'name': str(albatross.getEnclosedString(administrator, '\">', "</a>")), 'id': int(albatross.getEnclosedString(administrator, "\?user\=", '\">')), 'role':'administrator'})
-    descriptionText = albatross.getEnclosedString(tagJSON[1][0], ":</b> ", descriptionEndTag)
+        tag['staff'].append({'name': str(albatross.getEnclosedString(administrator, r'">', r"</a>")), 'id': int(albatross.getEnclosedString(administrator, r"\?user=", r'">')), 'role':'administrator'})
+    descriptionText = albatross.getEnclosedString(tagJSON[1][0], r":</b> ", descriptionEndTag)
     if descriptionText:
       tag['description'] = descriptionText
     else:

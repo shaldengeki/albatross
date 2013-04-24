@@ -38,7 +38,7 @@ class testTopicListClass(object):
 
   def testgetTopicInfoFromListing(self):
     assert isinstance(self.currentTopicList[0], albatross.Topic)
-    assert isinstance(self.cyberlightTopicDict, dict) and len(self.cyberlightTopicDict) > 0 and 'tags' in self.cyberlightTopicDict and 'NWS' in self.cyberlightTopicDict['tags']
+    assert isinstance(self.cyberlightTopicDict, dict) and len(self.cyberlightTopicDict) > 0 and 'tags' in self.cyberlightTopicDict and 'NWS' in [tag.name for tag in self.cyberlightTopicDict['tags']]
     assert isinstance(self.etiConn.topics.parse(self.currentTopicListPage), dict) and len(self.etiConn.topics.parse(self.currentTopicListPage)) > 0
 
   @raises(albatross.TopicListException)

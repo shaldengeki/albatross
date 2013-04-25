@@ -65,11 +65,11 @@ class Post(object):
     if not timeString:
       timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r'</div>')
     postDict = {'id': int(albatross.getEnclosedString(text, r'<div class="message-container" id="m', r'">')), 'user': {'name': albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>'), 'id': int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))}, 'date': pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(timeString, "%m/%d/%Y %I:%M:%S %p")), 'html': albatross.getEnclosedString(text, r' class="message">', r'---<br />', multiLine=True, greedy=True), 'sig': albatross.getEnclosedString(text, r'---<br />\n', r'</td>', multiLine=True, greedy=False)}
-    if not postDict['html']:
-      postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'</td>', multiLine=True, greedy=True)
+    if postDict['html'] is False:
+      postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'', multiLine=True, greedy=True)
       postDict['sig'] = ""
-    if not postDict['html']:
-      raise MalformedPostException(str(self))
+    if postDict['html'] is False:
+      raise MalformedPostException("ID: " + str(self.id) + " | Topic: " + str(self.topic.id) + "\nText:\n" + str(text))
     return postDict
 
   def load(self):

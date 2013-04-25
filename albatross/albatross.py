@@ -27,8 +27,8 @@ def getEnclosedString(text, startString='', endString='', multiLine=False, greed
   greedyPart = "?"
   if greedy:
     greedyPart = ""    
-  stringMatch = re.search(str(startString) + r'(?P<return>.+' + greedyPart + r')' + str(endString), text, flags=flags)
-  if not stringMatch or not stringMatch.group('return'):
+  stringMatch = re.search(str(startString) + r'(?P<return>.*' + greedyPart + r')' + str(endString), text, flags=flags)
+  if not stringMatch or stringMatch.group('return') is None:
     return False
   if isinstance(stringMatch.group('return'), unicode):
     return stringMatch.group('return')

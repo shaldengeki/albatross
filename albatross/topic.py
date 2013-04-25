@@ -62,7 +62,12 @@ class Topic(object):
     Sets attributes of this topic object with keys found in dict.
     """
     for key in attrDict:
-      setattr(self, "_" + key, attrDict[key])
+      if key == 'id':
+        self.id = attrDict[key]
+      elif key == 'page':
+        self.page = attrDict[key]
+      else:
+        setattr(self, "_" + key, attrDict[key])
     return self
 
   def load(self):
@@ -165,7 +170,7 @@ class Topic(object):
     """
     Takes the HTML of one page of a topic or link and returns a list containing the HTML for one post in each element on said page.
     """
-    return text.split('</td></tr></table></div>')[:-1]
+    return text.split('</td><td class="userpic">')[:-1]
 
   def appendPosts(self, text, url, curlHandle, paramArray):
     """

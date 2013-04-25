@@ -106,8 +106,7 @@ class TopicList(object):
       # split the topic listing string into a list so that one topic is in each element.
       topicListingHTML = albatross.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
       if not topicListingHTML:
-        self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
-        return self
+        break
       topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
       
       originalTopicsNum = len(self._topics)
@@ -117,12 +116,10 @@ class TopicList(object):
           self._topics.append(Topic(self.connection, topicInfo['id']).set(topicInfo))
       
       if len(self._topics) == originalTopicsNum:
-        self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
-        return self
+        break
 
       if not recurse:
-        self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
-        return self
+        break
       # we can't parallelize this, since we have no way of predicting the next ts and t parameters.
       maxTopicTime = self._topics[-1].lastPostTime
       maxTopicID = self._topics[-1].id

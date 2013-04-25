@@ -27,7 +27,7 @@ class testTopicListClass(object):
     klass.emptyTopicSearch = klass.etiConn.topics.search(query="abiejgapsodijf")
     klass.contradictoryTopicSearch = klass.etiConn.topics.search(allowedTags=["LUE"], forbiddenTags=["LUE"])
 
-    klass.emptyTopicList = klass.etiConn.topics.search(maxTopicTime=pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1)), maxTopicID=1)
+    klass.emptyTopicList = klass.etiConn.topics.search(maxTime=pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1)), maxID=1)
     klass.currentTopicList = klass.etiConn.topics.search()
     klass.anonymousTopicList = klass.etiConn.topics.search(allowedTags=["Anonymous"])
 

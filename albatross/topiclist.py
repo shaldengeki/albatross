@@ -42,16 +42,20 @@ class TopicList(object):
   def __reversed__(self):
     return self.topics[::-1]
 
-  def formatTagQueryString(self, allowedTags=[], forbiddenTags=[]):
+  def formatTagQueryString(self, allowed=None, forbidden=None):
     """
     Takes a list of tag names.
     Returns a string formatted for ETI's topic search URL.
     E.g. "Posted-Anonymous+Starcraft+Programming"
     """
-    if len(forbiddenTags) > 0:
-      return "-".join(["+".join(allowedTags), "-".join(forbiddenTags)])
+    if allowed is None:
+      allowed = []
+    if forbidden is None:
+      forbidden = []
+    if len(forbidden) > 0:
+      return "-".join(["+".join(allowed), "-".join(forbidden)])
     else:
-      return "+".join(allowedTags)
+      return "+".join(allowed)
 
   def parse(self, text):
     """
@@ -82,7 +86,7 @@ class TopicList(object):
       lastPostTime = False
     return dict([('id', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('user', {'id': user['userID'], 'name': user['username']}), ('postCount', int(thisTopic.group('postCount'))), ('newPosts', newPosts), ('lastPostTime', lastPostTime), ('closed', closedTopic), ('tags', tags)])
 
-  def search(self, query="", allowedTags=[], forbiddenTags=[], maxTopicTime=None, maxTopicID="", topicsActiveSince=None, topics=None, recurse=False):
+  def search(self, query="", allowedTags=None, forbiddenTags=None, maxTime=None, maxID=None, activeSince=None, topics=None, recurse=False):
     """
     Searches for topics using given parameters, and returns a list of dicts of returned topics.
     By default, recursively iterates through every page of search results.
@@ -90,17 +94,23 @@ class TopicList(object):
     """
     if topics is None:
       self._topics = []
+    if allowedTags is None:
+      allowedTags = []
+    if forbiddenTags is None:
+      forbiddenTags = []
+    if maxID is None:
+      maxID = ""
 
-    if maxTopicTime is None:
-      maxTopicTime = datetime.datetime.now(tz=pytz.timezone('America/Chicago'))
-    if topicsActiveSince is None:
-      topicsActiveSince = pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1))
+    if maxTime is None:
+      maxTime = datetime.datetime.now(tz=pytz.timezone('America/Chicago'))
+    if activeSince is None:
+      activeSince = pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1))
 
-    while maxTopicTime > topicsActiveSince:
+    while maxTime > activeSince:
       # assemble the search query and request this search page's topic listing.
-      if isinstance(maxTopicTime, datetime.datetime):
-        maxTopicTime = calendar.timegm(maxTopicTime.utctimetuple())
-      searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTopicTime)), ('t', str(maxTopicID))])
+      if isinstance(maxTime, datetime.datetime):
+        maxTime = calendar.timegm(maxTime.utctimetuple())
+      searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTime)), ('t', str(maxID))])
       topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowedTags=allowedTags, forbiddenTags=forbiddenTags) + '?' + searchQuery).html
       
       # split the topic listing string into a list so that one topic is in each element.
@@ -112,7 +122,7 @@ class TopicList(object):
       originalTopicsNum = len(self._topics)
       for topic in topicListingHTML:
         topicInfo = self.parse(topic)
-        if topicInfo and (not topicsActiveSince or topicInfo['lastPostTime'] > topicsActiveSince):
+        if topicInfo and (not activeSince or topicInfo['lastPostTime'] > activeSince):
           self._topics.append(Topic(self.connection, topicInfo['id']).set(topicInfo))
       
       if len(self._topics) == originalTopicsNum:
@@ -121,8 +131,8 @@ class TopicList(object):
       if not recurse:
         break
       # we can't parallelize this, since we have no way of predicting the next ts and t parameters.
-      maxTopicTime = self._topics[-1].lastPostTime
-      maxTopicID = self._topics[-1].id
+      maxTime = self._topics[-1].lastPostTime
+      maxID = self._topics[-1].id
     self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
     return self
 

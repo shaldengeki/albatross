@@ -24,7 +24,7 @@ class TopicListError(albatross.Error):
     self.topicList = topicList
   def __str__(self):
     return "\n".join([
-        str(super(TopicListError, self))
+        super(TopicListError, self).__str__()
       ])
 
 class TopicList(object):

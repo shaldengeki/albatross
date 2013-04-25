@@ -22,8 +22,8 @@ class InvalidTagError(albatross.Error):
     self.tag = tag
   def __str__(self):
     return "\n".join([
-        str(super(InvalidTagError, self)),
-        "Name: " + str(self.name)
+        super(InvalidTagError, self).__str__(),
+        "Name: " + str(self.tag.name)
       ])
 
 class MalformedTagError(InvalidTagError):
@@ -32,7 +32,7 @@ class MalformedTagError(InvalidTagError):
     self.text = text
   def __str__(self):
     return "\n".join([
-        str(super(MalformedTagError, self)),
+        super(MalformedTagError, self).__str__(),
         "Text: " + str(self.text)
       ])
 

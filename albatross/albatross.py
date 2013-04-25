@@ -17,9 +17,7 @@ class Error(Exception):
   def __init__(self):
     super(Error, self).__init__()
   def __str__(self):
-    return "\n".join([
-        str(super(Error, self))
-      ])
+    return ""
 
 def getEnclosedString(text, startString='', endString='', multiLine=False, greedy=False):
   """

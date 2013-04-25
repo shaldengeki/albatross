@@ -17,12 +17,12 @@ import connection
 import topic
 
 class InvalidPostError(topic.InvalidTopicError):
-  def __init__(self, post, topic):
-    super(InvalidPostError, self).__init__(topic)
+  def __init__(self, post):
+    super(InvalidPostError, self).__init__(post.topic)
     self.post = post
   def __str__(self):
     return "\n".join([
-        str(super(InvalidPostError, self)),
+      super(InvalidPostError, self).__str__(),
       "PostID: " + str(self.post.id),
       ])
 class MalformedPostError(InvalidPostError):
@@ -31,7 +31,7 @@ class MalformedPostError(InvalidPostError):
     self.text = text
   def __str__(self):
     return "\n".join([
-        str(super(MalformedTagError, self)),
+        super(MalformedTagError, self).__str__(),
         "Text: " + str(self.text)
       ])
 
@@ -94,7 +94,7 @@ class Post(object):
     postPage = self.connection.page('https://boards.endoftheinter.net/message.php?id=' + str(self.id) + '&topic=' + str(self.topic.id))
     # check to see if this page is valid.
     if re.search(r'<em>Invalid topic.</em>', postPage.html) or re.search(r'<em>Can\'t find that post...</em>', postPage.html):
-      raise InvalidPostError(self, self.topic)
+      raise InvalidPostError(self)
 
     if postPage.authed:
       # hooray, start pulling info.

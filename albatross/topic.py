@@ -23,7 +23,7 @@ class InvalidTopicError(albatross.Error):
     self.topic = topic
   def __str__(self):
     return "\n".join([
-        str(super(InvalidTopicError, self)),
+        super(InvalidTopicError, self).__str__(),
       "TopicID: " + str(self.topic.id),
       "Page: " + str(self.topic.page)
       ])
@@ -31,7 +31,7 @@ class InvalidTopicError(albatross.Error):
 class ArchivedTopicError(InvalidTopicError):
   def __str__(self):
     return "\n".join([
-        str(super(ArchivedTopicError, self)),
+        super(ArchivedTopicError, self).__str__(),
       "Archived: " + str(self._archived)
       ])
 

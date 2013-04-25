@@ -27,7 +27,7 @@ class UnauthorizedError(albatross.Error):
     self.connection = cxn
   def __str__(self):
     return "\n".join([
-        str(super(UnauthorizedError, self))
+        super(UnauthorizedError, self).__str__()
       ])
 
 class Connection(object):

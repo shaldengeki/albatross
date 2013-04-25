@@ -20,7 +20,7 @@ class PageLoadError(albatross.Error):
     self.page = page
   def __str__(self):
     return "\n".join([
-        str(super(PageLoadError, self)),
+        super(PageLoadError, self).__str__(),
         "URL: " + str(self.page.url),
         "needsAuth: " + str(self.page.needsAuth)
       ])

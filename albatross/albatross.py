@@ -13,6 +13,14 @@ import re
 SITE_MAIN = {"url":"https://endoftheinter.net/","fields":{"username":"b","password":"p"}}
 SITE_MOBILE = {"url":"https://iphone.endoftheinter.net/","fields":{"username":"username","password":"password"}}
 
+class Error(Exception):
+  def __init__(self):
+    super(Error, self).__init__()
+  def __str__(self):
+    return "\n".join([
+        str(super(Error, self))
+      ])
+
 def getEnclosedString(text, startString='', endString='', multiLine=False, greedy=False):
   """
   Given some text and two strings, return the string that is encapsulated by the first sequence of these two strings in order.

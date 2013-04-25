@@ -41,7 +41,7 @@ class testTopicListClass(object):
     assert isinstance(self.cyberlightTopicDict, dict) and len(self.cyberlightTopicDict) > 0 and 'tags' in self.cyberlightTopicDict and 'NWS' in [tag.name for tag in self.cyberlightTopicDict['tags']]
     assert isinstance(self.etiConn.topics.parse(self.currentTopicListPage), dict) and len(self.etiConn.topics.parse(self.currentTopicListPage)) > 0
 
-  @raises(albatross.TopicListException)
+  @raises(albatross.TopicListError)
   def testgetTopicInfoFromEmptyListing(self):
     self.etiConn.topics.parse(self.emptyTopicSearchList)
 

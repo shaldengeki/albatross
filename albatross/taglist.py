@@ -13,7 +13,7 @@ import albatross
 import page
 import tag
 
-class TagListException(Exception):
+class TagListError(albatross.Error):
   pass
 
 class TagList(object):
@@ -65,7 +65,7 @@ class TagList(object):
     thisTag = tag.Tag(self.connection, "")
     try:
       thisTag.set(thisTag.parse(text))
-    except tag.InvalidTagException:
+    except tag.InvalidTagError:
       # workaround for tags where extended information doesn't display properly.
       if "e=" not in url:
         raise

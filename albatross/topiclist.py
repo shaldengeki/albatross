@@ -18,8 +18,14 @@ import albatross
 from topic import Topic
 from taglist import TagList
 
-class TopicListException(Exception):
-  pass
+class TopicListError(albatross.Error):
+  def __init__(self, topicList):
+    super(TopicListError, self).__init__()
+    self.topicList = topicList
+  def __str__(self):
+    return "\n".join([
+        str(super(TopicListError, self))
+      ])
 
 class TopicList(object):
   '''
@@ -63,7 +69,7 @@ class TopicList(object):
     """
     thisTopic = re.search(r'\<td\ class\=\"oh\"\>\<div\ class\=\"fl\"\>((?P<closed><span\ class\=\"closed\"\>))?\<a\ href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?topic\=(?P<topicID>[0-9]+)\">(<b>)?(?P<title>[^<]+)(</b>)?\</a\>(</span>)?</div\>\<div\ class\=\"fr\"\>((?P<tags>(.+?))\ )?\<\/div\></td\>\<td\>(?P<moneybags>\<span\ style\=\"color\:green\;font\-weight\:bold\"\>\$\ \$\<\/span\>)?\ *(\<a\ href\=\"//endoftheinter\.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>)?(Human)?\ *(?P<moneybags2>\<span\ style\=\"color\:green\;font\-weight\:bold\"\>\$\ \$\<\/span\>)?\<\/td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
     if not thisTopic:
-      raise TopicListException(text)
+      raise TopicListError(self)
     user = {'userID': 0, 'username': 'Human', 'moneybags': False}
     if thisTopic.group('userID') and thisTopic.group('username'):
       user['userID'] = int(thisTopic.group('userID'))
@@ -111,7 +117,7 @@ class TopicList(object):
       if isinstance(maxTime, datetime.datetime):
         maxTime = calendar.timegm(maxTime.utctimetuple())
       searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTime)), ('t', str(maxID))])
-      topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowedTags=allowedTags, forbiddenTags=forbiddenTags) + '?' + searchQuery).html
+      topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowed=allowedTags, forbidden=forbiddenTags) + '?' + searchQuery).html
       
       # split the topic listing string into a list so that one topic is in each element.
       topicListingHTML = albatross.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)

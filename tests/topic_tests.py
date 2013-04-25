@@ -27,7 +27,7 @@ class testTopicClass(object):
   def testcheckTopicValid(self):
     assert isinstance(self.validTopic, albatross.Topic)
 
-  @raises(albatross.InvalidTopicException)
+  @raises(albatross.InvalidTopicError)
   def testcheckTopicInvalid(self):
     self.invalidTopic.load()
     
@@ -44,14 +44,14 @@ class testTopicClass(object):
   def testgetTopicTitle(self):
     assert isinstance(self.starcraftTopic.title, str) and self.starcraftTopic.title
 
-  @raises(albatross.InvalidTopicException)
+  @raises(albatross.InvalidTopicError)
   def testgetInvalidTopicTitle(self):
     self.invalidTopic.title
 
   def testgetTopicDate(self):
     assert self.starcraftTopic.date and isinstance(self.starcraftTopic.date, datetime.datetime) and self.starcraftTopic.date == datetime.datetime.fromtimestamp(1296773983, tz=self.centralTimezone)
 
-  @raises(albatross.InvalidTopicException)
+  @raises(albatross.InvalidTopicError)
   def testinvalidTopicDate(self):
     self.invalidTopic.date
 
@@ -65,7 +65,7 @@ class testTopicClass(object):
     assert self.multiPageTopic.pages == 3
     assert self.lastPageTopic.pages == 3
 
-  @raises(albatross.InvalidTopicException)
+  @raises(albatross.InvalidTopicError)
   def testgetInvalidTopicPosts(self):
     self.invalidTopic.posts()
 
@@ -74,7 +74,7 @@ class testTopicClass(object):
     assert isinstance(self.starcraftTopic.posts(), list) and self.starcraftTopic.posts() and len(self.starcraftTopic.posts()) == 2
     assert isinstance(self.archivedTopic.posts(), list) and self.archivedTopic.posts() and len(self.archivedTopic.posts()) == 106
 
-  @raises(albatross.InvalidTopicException)
+  @raises(albatross.InvalidTopicError)
   def testgetInvalidTopicTags(self):
     self.invalidTopic.tags
 

@@ -14,11 +14,26 @@ import re
 
 import albatross
 import connection
+import topic
 
-class InvalidPostException(Exception):
-  pass
-class MalformedPostException(Exception):
-  pass
+class InvalidPostError(topic.InvalidTopicError):
+  def __init__(self, post, topic):
+    super(InvalidPostError, self).__init__(topic)
+    self.post = post
+  def __str__(self):
+    return "\n".join([
+        str(super(InvalidPostError, self)),
+      "PostID: " + str(self.post.id),
+      ])
+class MalformedPostError(InvalidPostError):
+  def __init__(self, post, topic, text):
+    super(MalformedPostError, self).__init__(post, topic)
+    self.text = text
+  def __str__(self):
+    return "\n".join([
+        str(super(MalformedTagError, self)),
+        "Text: " + str(self.text)
+      ])
 
 class Post(object):
   '''
@@ -69,7 +84,7 @@ class Post(object):
       postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'', multiLine=True, greedy=True)
       postDict['sig'] = ""
     if postDict['html'] is False:
-      raise MalformedPostException("ID: " + str(self.id) + " | Topic: " + str(self.topic.id) + "\nText:\n" + str(text))
+      raise MalformedPostError(self, self.topic, str(text))
     return postDict
 
   def load(self):
@@ -79,13 +94,13 @@ class Post(object):
     postPage = self.connection.page('https://boards.endoftheinter.net/message.php?id=' + str(self.id) + '&topic=' + str(self.topic.id))
     # check to see if this page is valid.
     if re.search(r'<em>Invalid topic.</em>', postPage.html) or re.search(r'<em>Can\'t find that post...</em>', postPage.html):
-      raise InvalidPostException("ID:",str(self.id),"|","TopicID:",str(self.topic.id))
+      raise InvalidPostError(self, self.topic)
 
     if postPage.authed:
       # hooray, start pulling info.
       self.set(self.parse(postPage.html))
     else:
-      raise connection.UnauthorizedException("ID:",str(self.id))
+      raise connection.UnauthorizedError(self.connection)
 
   @property
   def date(self):

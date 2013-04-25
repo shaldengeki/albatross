@@ -14,8 +14,16 @@ import pycurl
 import albatross
 import connection
 
-class PageLoadException(Exception):
-  pass
+class PageLoadError(albatross.Error):
+  def __init__(self, page):
+    super(PageLoadError, self).__init__()
+    self.page = page
+  def __str__(self):
+    return "\n".join([
+        str(super(PageLoadError, self)),
+        "URL: " + str(self.page.url),
+        "needsAuth: " + str(self.page.needsAuth)
+      ])
 
 class Page(object):
   '''
@@ -90,7 +98,7 @@ class Page(object):
         continue
       # check to see if ETI is acting up.
       if requestCode in {0:1, 404:1, 500:1, 501:1, 502:1, 503:1, 504:1}:
-        raise PageLoadException(self.url)
+        raise PageLoadError(self)
       if self.needsAuth:
         if self.checkAuthed(response):
           self._authed = True
@@ -101,10 +109,10 @@ class Page(object):
           if self.connection.reauthenticate():
             continue
           else:
-            raise connection.UnauthorizedException(self.url)
+            raise connection.UnauthorizedError(self.connection)
       else:
         return response
-    raise PageLoadException(self.url)
+    raise PageLoadError(self)
 
   @property
   def header(self):

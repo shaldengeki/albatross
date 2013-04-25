@@ -16,14 +16,27 @@ import urllib
 import albatross
 import connection
 import page
+
+class InvalidTopicError(albatross.Error):
+  def __init__(self, topic):
+    super(InvalidTopicError, self).__init__()
+    self.topic = topic
+  def __str__(self):
+    return "\n".join([
+        str(super(InvalidTopicError, self)),
+      "TopicID: " + str(self.topic.id),
+      "Page: " + str(self.topic.page)
+      ])
+
+class ArchivedTopicError(InvalidTopicError):
+  def __str__(self):
+    return "\n".join([
+        str(super(ArchivedTopicError, self)),
+      "Archived: " + str(self._archived)
+      ])
+
 import post
 import taglist
-
-class ArchivedTopicException(Exception):
-  pass
-
-class InvalidTopicException(Exception):
-  pass
 
 class Topic(object):
   '''
@@ -87,11 +100,11 @@ class Topic(object):
         subdomain = "archives"
         topicPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(self.id))
       elif self._archived is False:
-        raise ArchivedTopicException("ID " + str(self.id))
+        raise ArchivedTopicError(self)
     elif self._archived is None:
       self._archived = False
     if not re.search(r'Page\ 1\ of\ ', topicPage.html):
-      raise InvalidTopicException("ID " + str(self.id))
+      raise InvalidTopicError(self)
 
     if topicPage.authed:
       # hooray, start pulling info.
@@ -111,9 +124,9 @@ class Topic(object):
         lastPost = lastPost.set(lastPost.parse(lastPagePosts[-1]))
         self._lastPostTime = lastPost.date
       else:
-        raise connection.UnauthorizedException("ID " + str(self.id))
+        raise connection.UnauthorizedError(self.connection)
     else:
-      raise connection.UnauthorizedException("ID " + str(self.id))
+      raise connection.UnauthorizedError(self.connection)
 
   @property
   def date(self):
@@ -177,7 +190,8 @@ class Topic(object):
     Takes the HTML of a topic message listing as fed in by pyparallelcurl and appends the posts contained within to the current topic's posts.
     """
     if not text:
-      raise page.PageLoadException(url)
+      thisPage = page.Page(url)
+      raise page.PageLoadError(thisPage)
     
     thisPage = page.Page(self.connection, url)
     thisPage._html = text

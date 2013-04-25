@@ -9,15 +9,32 @@
 '''
 
 import json
+import sys
 import urllib
 
 import albatross
 import connection
+import page
 
-class InvalidTagException(Exception):
-  pass
-class MalformedTagException(Exception):
-  pass
+class InvalidTagError(albatross.Error):
+  def __init__(self, tag):
+    super(InvalidTagError, self).__init__()
+    self.tag = tag
+  def __str__(self):
+    return "\n".join([
+        str(super(InvalidTagError, self)),
+        "Name: " + str(self.name)
+      ])
+
+class MalformedTagError(InvalidTagError):
+  def __init__(self, tag, text):
+    super(MalformedTagError, self).__init__(tag)
+    self.text = text
+  def __str__(self):
+    return "\n".join([
+        str(super(MalformedTagError, self)),
+        "Text: " + str(self.text)
+      ])
 
 class Tag(object):
   '''
@@ -52,9 +69,9 @@ class Tag(object):
       tagJSON = json.loads(text)
     except ValueError:
       print "Warning: invalid JSON object provided by ETI ajax tag interface."
-      raise MalformedTagException("Name:",str(self.name),"|","JSON:",str(tagJSON))
+      raise MalformedTagError(self, str(tagJSON))
     if len(tagJSON) < 1:
-      raise InvalidTagException("Name:",str(self.name),"|","JSON:",str(tagJSON))
+      raise MalformedTagError(self, str(tagJSON))
     tagJSON = tagJSON[0]
     tag = {'name': tagJSON[0]}
 
@@ -96,13 +113,14 @@ class Tag(object):
     Fetches tag info.
     """
     tagInfoParams = urllib.urlencode([('e', ''), ('q', str(self.name).replace(" ", "_")), ('n', '1')])
-    tagPage = self.connection.page("https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams)
+    tagURL = "https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams
+    tagPage = self.connection.page(tagURL)
     # check to see if this page is valid.
     if tagPage.authed:
       # hooray, start pulling info.
       self.set(self.parse(tagPage.html))
     else:
-      raise connection.UnauthorizedException("Tag name:",str(self.name))
+      raise connection.UnauthorizedError(self.connection)
 
   @property
   def staff(self):

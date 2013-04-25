@@ -21,8 +21,14 @@ from topiclist import TopicList
 from tag import Tag
 from taglist import TagList
 
-class UnauthorizedException(Exception):
-  pass
+class UnauthorizedError(albatross.Error):
+  def __init__(self, cxn):
+    super(UnauthorizedError, self).__init__()
+    self.connection = cxn
+  def __str__(self):
+    return "\n".join([
+        str(super(UnauthorizedError, self))
+      ])
 
 class Connection(object):
   '''

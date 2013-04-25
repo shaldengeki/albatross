@@ -26,6 +26,6 @@ class testTagClass(object):
     assert len(self.tvTag.dependent) > 0 and isinstance(self.tvTag.dependent[0], albatross.Tag) and self.tvTag.dependent[0].name
     assert len(self.tvTag.forbidden) > 0 and isinstance(self.tvTag.forbidden[0], albatross.Tag) and self.tvTag.forbidden[0].name
 
-  @raises(albatross.InvalidTagException)
+  @raises(albatross.InvalidTagError)
   def testgetInvalidTagInfo(self):
     self.invalidTag.description

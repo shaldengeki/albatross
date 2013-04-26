@@ -34,10 +34,7 @@ class TagList(object):
       tagLinks = tagLinksHTML.split('&nbsp;&bull; ')
       for text in tagLinks:
         self._tagNames[parser.unescape(albatross.getEnclosedString(text, '">', '</a>')).strip()] = 1
-    if self._tagNames:
-      self._tags = []
-      for tagName in self._tagNames:
-        self._tags.append(tag.Tag(self.connection, tagName))
+      self.load()
   def __getitem__(self, index):
     return self.tags[index]
   def __delitem__(self, index):
@@ -76,6 +73,15 @@ class TagList(object):
 
     if thisTag:
       self._tags.append(thisTag)
+
+  def load(self):
+    """
+    Returns all the information that the currently signed-in user can view about the tag(s).
+    """
+    if self._tagNames:
+      self._tags = []
+      for tagName in self._tagNames:
+        self._tags.append(tag.Tag(self.connection, tagName))
 
   @property
   def tags(self):

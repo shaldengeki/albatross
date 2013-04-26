@@ -9,6 +9,7 @@
 '''
 
 import json
+import HTMLParser
 import sys
 import urllib
 
@@ -64,6 +65,7 @@ class Tag(object):
     """
     Given some JSON containing a tag, return a dict.
     """
+    parser = HTMLParser.HTMLParser()
     text = text[1:]
     try:
       tagJSON = json.loads(text)
@@ -73,7 +75,12 @@ class Tag(object):
     if len(tagJSON) < 1:
       raise MalformedTagError(self, str(tagJSON))
     tagJSON = tagJSON[0]
-    tag = {'name': tagJSON[0]}
+    name = tagJSON[0]
+    if name.startswith("["):
+      name = name[1:]
+    if name.endswith("]"):
+      name = name[:-1]
+    tag = {'name': name}
 
     tag['staff'] = []
 
@@ -93,7 +100,7 @@ class Tag(object):
         tag['staff'].append({'name': str(albatross.getEnclosedString(administrator, r'">', r"</a>")), 'id': int(albatross.getEnclosedString(administrator, r"\?user=", r'">')), 'role':'administrator'})
     descriptionText = albatross.getEnclosedString(tagJSON[1][0], r":</b> ", descriptionEndTag)
     if descriptionText:
-      tag['description'] = descriptionText
+      tag['description'] = parser.unescape(descriptionText)
     else:
       tag['description'] = ''
 
@@ -112,13 +119,17 @@ class Tag(object):
     """
     Fetches tag info.
     """
-    tagInfoParams = urllib.urlencode([('e', ''), ('q', str(self.name).replace(" ", "_")), ('n', '1')])
+    tagInfoParams = urllib.urlencode([('e', ''), ('q', str(self.name)), ('n', '1')])
     tagURL = "https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams
     tagPage = self.connection.page(tagURL)
     # check to see if this page is valid.
     if tagPage.authed:
       # hooray, start pulling info.
-      self.set(self.parse(tagPage.html))
+      try:
+        self.set(self.parse(tagPage.html))
+      except MalformedTagError, e:
+        e.message = "URL: " + str(tagURL)
+        raise e
     else:
       raise connection.UnauthorizedError(self.connection)
 

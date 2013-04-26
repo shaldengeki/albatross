@@ -9,6 +9,7 @@
 '''
 
 import datetime
+import HTMLParser
 import pytz
 import re
 
@@ -76,10 +77,11 @@ class Post(object):
     """
     Given some HTML containing a post, return a dict.
     """
+    parser = HTMLParser.HTMLParser()
     timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r' \| ')
     if not timeString:
       timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r'</div>')
-    postDict = {'id': int(albatross.getEnclosedString(text, r'<div class="message-container" id="m', r'">')), 'user': {'name': albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>'), 'id': int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))}, 'date': pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(timeString, "%m/%d/%Y %I:%M:%S %p")), 'html': albatross.getEnclosedString(text, r' class="message">', r'---<br />', multiLine=True, greedy=True), 'sig': albatross.getEnclosedString(text, r'---<br />\n', r'</td>', multiLine=True, greedy=False)}
+    postDict = {'id': int(albatross.getEnclosedString(text, r'<div class="message-container" id="m', r'">')), 'user': {'name': parser.unescape(albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>')), 'id': int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))}, 'date': pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(timeString, "%m/%d/%Y %I:%M:%S %p")), 'html': albatross.getEnclosedString(text, r' class="message">', r'---<br />', multiLine=True, greedy=True), 'sig': albatross.getEnclosedString(text, r'---<br />\n', r'</td>', multiLine=True, greedy=False)}
     if postDict['html'] is False:
       postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'', multiLine=True, greedy=True)
       postDict['sig'] = ""

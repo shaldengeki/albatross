@@ -9,9 +9,11 @@
 '''
 
 import datetime
+import HTMLParser
 import pytz
 import re
 import urllib
+import urllib2
 
 import albatross
 import connection
@@ -108,15 +110,23 @@ class Topic(object):
 
     if topicPage.authed:
       # hooray, start pulling info.
-      self._title = albatross.getEnclosedString(topicPage.html, r'\<h1\>', r'\<\/h1\>')
+      parser = HTMLParser.HTMLParser()
+      self._title = parser.unescape(albatross.getEnclosedString(topicPage.html, r'\<h1\>', r'\<\/h1\>'))
       self._date = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(albatross.getEnclosedString(topicPage.html, r'<b>Posted:</b> ', r' \| '), "%m/%d/%Y %I:%M:%S %p"))
       userID = int(albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))
-      username = albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=' + str(userID) + r'">', r'</a>')
+      username = parser.unescape(albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=' + str(userID) + r'">', r'</a>'))
       self._user = {'id': userID, 'name': username}
       self._pages = int(albatross.getEnclosedString(topicPage.html, r'">(First Page</a> \| )?(<a href)?(\S+)?(Previous Page</a> \| )?Page \d+ of <span>', r'</span>'))
       self._closed = self._archived
-      self._tags = taglist.TagList(self.connection, tags=[albatross.getEnclosedString(tagEntry, '<a href="/topics/', r'">') for tagEntry in albatross.getEnclosedString(topicPage.html, r"<h2><div", r"</div></h2>").split(r"</a>")[:-1] if not tagEntry.startswith(' <span')])
-
+      tagNames = [urllib2.unquote(albatross.getEnclosedString(tagEntry, '<a href="/topics/', r'">')) for tagEntry in albatross.getEnclosedString(topicPage.html, r"<h2><div", r"</div></h2>").split(r"</a>")[:-1] if not tagEntry.startswith(' <span')]
+      # we need to process tag names
+      # e.g. remove enclosing square braces and decode html entities.
+      cleanedTagNames = []
+      for tagName in tagNames:
+        if tagName.startswith("[") and tagName.endswith("]"):
+          tagName = tagName[1:-1]
+        cleanedTagNames.append(parser.unescape(tagName.replace("_", " ")))
+      self._tags = taglist.TagList(self.connection, tags=cleanedTagNames)
       lastPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(self.id) + '&page=' + str(self._pages))
       if lastPage.authed:
         lastPagePosts = self.getPagePosts(lastPage.html)

@@ -7,6 +7,7 @@
 
     TagList - Tag list information retrieval and manipulation.
 '''
+import HTMLParser
 import urllib
 
 import albatross
@@ -27,11 +28,12 @@ class TagList(object):
     self._tagNames = dict(zip(tags, [1]*len(tags)))
     self._tags = None
     if active:
+      parser = HTMLParser.HTMLParser()
       mainPage = page.Page(self.connection, "https://endoftheinter.net/main.php")
       tagLinksHTML = albatross.getEnclosedString(mainPage.html, r'<div style="font-size: 14px">', r'</div>', multiLine=True)
       tagLinks = tagLinksHTML.split('&nbsp;&bull; ')
       for text in tagLinks:
-        self._tagNames[albatross.getEnclosedString(text, '">', '</a>').strip()] = 1
+        self._tagNames[parser.unescape(albatross.getEnclosedString(text, '">', '</a>')).strip()] = 1
     if self._tagNames:
       self._tags = []
       for tagName in self._tagNames:
@@ -74,18 +76,6 @@ class TagList(object):
 
     if thisTag:
       self._tags.append(thisTag)
-
-  def load(self):
-    """
-    Returns all the information that the currently signed-in user can view about the tag(s).
-    """
-    if not self._tags:
-      self._tags = []
-
-    for name in self._tagNames:
-      tagInfoParams = urllib.urlencode([('e', ''), ('q', str(name).replace(" ", "_")), ('n', '1')])
-      self.connection.parallelCurl.startrequest("https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams, self.appendTag)
-    self.connection.parallelCurl.finishallrequests()
 
   @property
   def tags(self):

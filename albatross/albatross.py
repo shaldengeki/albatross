@@ -14,10 +14,11 @@ SITE_MAIN = {"url":"https://endoftheinter.net/","fields":{"username":"b","passwo
 SITE_MOBILE = {"url":"https://iphone.endoftheinter.net/","fields":{"username":"username","password":"password"}}
 
 class Error(Exception):
-  def __init__(self):
+  def __init__(self, message=None):
     super(Error, self).__init__()
+    self.message = message
   def __str__(self):
-    return ""
+    return str(self.message)
 
 def getEnclosedString(text, startString='', endString='', multiLine=False, greedy=False):
   """

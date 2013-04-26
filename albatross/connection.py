@@ -182,9 +182,8 @@ class Connection(object):
   def page(self, url, authed=True):
     return Page(self, url, authed)
 
-  @property
-  def topics(self):
-    return TopicList(self)
+  def topics(self, allowedTags=None, forbiddenTags=None):
+    return TopicList(self, allowedTags=allowedTags, forbiddenTags=forbiddenTags)
 
   def topic(self, id, page=1):
     return Topic(self, id, page=page)

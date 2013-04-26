@@ -19,6 +19,7 @@ import urllib2
 import albatross
 from topic import Topic
 from taglist import TagList
+from tag import Tag
 
 class TopicListError(albatross.Error):
   def __init__(self, topicList):
@@ -33,9 +34,11 @@ class TopicList(object):
   '''
   Topic list-loading object for albatross.
   '''
-  def __init__(self, conn):
+  def __init__(self, conn, allowedTags=None, forbiddenTags=None):
     self.connection = conn
     self._topics = []
+    self._allowedTags = allowedTags
+    self._forbiddenTags = forbiddenTags
   def __getitem__(self, index):
     return self.topics[index]
   def __delitem__(self, index):
@@ -50,16 +53,13 @@ class TopicList(object):
   def __reversed__(self):
     return self.topics[::-1]
 
-  def formatTagQueryString(self, allowed=None, forbidden=None):
+  def formatTagQueryString(self):
     """
-    Takes a list of tag names.
-    Returns a string formatted for ETI's topic search URL.
+    Returns a string formatted for ETI's topic search URL using this topic list's properties.
     E.g. "[Posted]-[Anonymous]+[Starcraft]+[Programming]"
     """
-    if allowed is None:
-      allowed = []
-    if forbidden is None:
-      forbidden = []
+    allowed = True and self._allowedTags or []
+    forbidden = True and self._forbiddenTags or []
     if len(forbidden) > 0:
       return "-".join(["+".join(["[" + urllib2.quote(tag) + "]" for tag in allowed]), "-".join(["[" + urllib2.quote(tag) + "]" for tag in forbidden])])
     else:
@@ -89,13 +89,16 @@ class TopicList(object):
       tags = TagList(self.connection, tags=[parser.unescape(re.search(r'\"\>(?P<name>[^<]+)', tag).group('name')) for tag in thisTopic.group('tags').split("</a>") if tag])
     else:
       tags = TagList(self.connection, tags=[])
+    # If we're searching for just one tag, it won't show in the topic list, so we've got to manually-append it.
+    if self._allowedTags and len(self._allowedTags) == 1:
+      tags.append(Tag(self.connection, self._allowedTags[0]))
     if thisTopic.group('lastPostTime'):
       lastPostTime = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(thisTopic.group('lastPostTime'), "%m/%d/%Y %H:%M"))
     else:
       lastPostTime = False
     return dict([('id', int(thisTopic.group('topicID'))), ('title', parser.unescape(thisTopic.group('title'))), ('user', {'id': user['userID'], 'name': user['username']}), ('postCount', int(thisTopic.group('postCount'))), ('newPosts', newPosts), ('lastPostTime', lastPostTime), ('closed', closedTopic), ('tags', tags)])
 
-  def search(self, query="", allowedTags=None, forbiddenTags=None, maxTime=None, maxID=None, activeSince=None, topics=None, recurse=False):
+  def search(self, query="", maxTime=None, maxID=None, activeSince=None, topics=None, recurse=False):
     """
     Searches for topics using given parameters, and returns a list of dicts of returned topics.
     By default, recursively iterates through every page of search results.
@@ -103,10 +106,8 @@ class TopicList(object):
     """
     if topics is None:
       self._topics = []
-    if allowedTags is None:
-      allowedTags = []
-    if forbiddenTags is None:
-      forbiddenTags = []
+
+    # if allowedTags or forbiddenTags is provided, it overrides this topiclist object's personal allowed or forbidden tags.
     if maxID is None:
       maxID = ""
 
@@ -120,7 +121,7 @@ class TopicList(object):
       if isinstance(maxTime, datetime.datetime):
         maxTime = calendar.timegm(maxTime.utctimetuple())
       searchQuery = urllib.urlencode([('q', unicode(query).encode('utf-8')), ('ts', unicode(maxTime).encode('utf-8')), ('t', unicode(maxID).encode('utf-8'))])
-      topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowed=allowedTags, forbidden=forbiddenTags) + '?' + searchQuery).html
+      topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString() + '?' + searchQuery).html
       
       # split the topic listing string into a list so that one topic is in each element.
       topicListingHTML = albatross.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)

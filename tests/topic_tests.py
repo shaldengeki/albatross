@@ -5,22 +5,22 @@ import pytz
 
 class testTopicClass(object):
   @classmethod
-  def setUpClass(klass):
+  def setUpClass(self):
     # reads ETI login credentials from credentials.txt and cookieString.txt in the current directory.
     credentials = open('credentials.txt', 'r').readlines()[0].strip().split(',')
     
-    klass.username = credentials[0]
-    klass.password = credentials[1].rstrip()
-    klass.etiConn = albatross.Connection(username=klass.username, password=klass.password, loginSite=albatross.SITE_MOBILE)
+    self.username = credentials[0]
+    self.password = credentials[1].rstrip()
+    self.etiConn = albatross.Connection(username=self.username, password=self.password, loginSite=albatross.SITE_MOBILE)
 
-    klass.centralTimezone = pytz.timezone('America/Chicago')
+    self.centralTimezone = pytz.timezone('America/Chicago')
 
-    klass.validTopic = klass.etiConn.topics.search(allowedTags=["LUE"])[0]
-    klass.archivedTopic = klass.etiConn.topic(6240806)
-    klass.multiPageTopic = klass.etiConn.topic(6240806, page=2)
-    klass.lastPageTopic = klass.etiConn.topic(6240806, page=3)
-    klass.starcraftTopic = klass.etiConn.topic(6951014)
-    klass.anonymousTopic = klass.etiConn.topic(8431797)
+    self.validTopic = self.etiConn.topics(allowedTags=["LUE"]).search()[0]
+    self.archivedTopic = self.etiConn.topic(6240806)
+    self.multiPageTopic = self.etiConn.topic(6240806, page=2)
+    self.lastPageTopic = self.etiConn.topic(6240806, page=3)
+    self.starcraftTopic = self.etiConn.topic(6951014)
+    self.anonymousTopic = self.etiConn.topic(8431797)
 
   @raises(TypeError)
   def testNoIDInvalidTopic(self):

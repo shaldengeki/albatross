@@ -15,7 +15,7 @@ class testPostClass(object):
 
     self.centralTimezone = pytz.timezone('America/Chicago')
 
-    self.validTopic = self.etiConn.topics.search(allowedTags=["LUE"], forbiddenTags=["Anonymous"])[0]
+    self.validTopic = self.etiConn.topics(allowedTags=["LUE"], forbiddenTags=["Anonymous"]).search()[0]
     self.validPost = self.validTopic.posts()[0]
     self.archivedTopic = self.etiConn.topic(6240806)
     self.archivedPost = self.etiConn.post(67630266, self.archivedTopic)

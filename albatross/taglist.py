@@ -91,5 +91,10 @@ class TagList(object):
 
   def append(self, appTag):
     if appTag.name not in self._tagNames:
-      self._tagNames.append(appTag.name)
-      self._tags.append(appTag)
+      self._tagNames[appTag.name] = 1
+      if isinstance(self._tags, list):
+        self._tags.append(appTag)
+    return self
+
+  def topics(self):
+    return self.connection.topics(allowedTags=self._tagNames.keys())

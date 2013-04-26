@@ -59,7 +59,7 @@ class Page(object):
       pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
       pageRequest.setopt(pycurl.URL, self.url.encode('utf-8'))
       pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
-      pageRequest.setopt(pycurl.COOKIE, str(self.connection.cookieString))
+      pageRequest.setopt(pycurl.COOKIE, self.connection.cookieString.encode('utf-8') if self.connection.cookieString else "")
       pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
       try:
         pageRequest.perform()
@@ -85,7 +85,7 @@ class Page(object):
       pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
       pageRequest.setopt(pycurl.URL, self.url.encode('utf-8'))
       pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
-      pageRequest.setopt(pycurl.COOKIE, str(self.connection.cookieString))
+      pageRequest.setopt(pycurl.COOKIE, self.connection.cookieString.encode('utf-8') if self.connection.cookieString else "")
       pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
       pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
       try:

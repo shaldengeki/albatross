@@ -17,19 +17,19 @@ class testTopicListClass(object):
     self.currentTopicListPage = self.etiConn.page('https://boards.endoftheinter.net/topics/').html
 
     self.emptyTopicSearchList = self.etiConn.page('https://boards.endoftheinter.net/topics/?q=abiejgapsodijf').html
-    self.cyberlightTopicDict = self.etiConn.topics.parse(self.etiConn.page('https://boards.endoftheinter.net/topics/?q=insanity+enjoy').html)
-    self.anonymousTopicDict = self.etiConn.topics.parse(self.etiConn.page('https://boards.endoftheinter.net/topics/Anonymous').html)
+    self.cyberlightTopicDict = self.etiConn.topics().parse(self.etiConn.page('https://boards.endoftheinter.net/topics/?q=insanity+enjoy').html)
+    self.anonymousTopicDict = self.etiConn.topics().parse(self.etiConn.page('https://boards.endoftheinter.net/topics/Anonymous').html)
 
-    self.nwsTopicSearch = self.etiConn.topics.search(query="NWS")
-    self.anonymousTopicSearch = self.etiConn.topics.search(query="", allowedTags=["Anonymous"])
-    self.multiTagTopicSearch = self.etiConn.topics.search(query="the", allowedTags=["LUE", "Anonymous"], forbiddenTags=["Sports", "Gaming"])
-    self.archivesTopicSearch = self.etiConn.topics.search(query="Archived")
-    self.emptyTopicSearch = self.etiConn.topics.search(query="abiejgapsodijf")
-    self.contradictoryTopicSearch = self.etiConn.topics.search(allowedTags=["LUE"], forbiddenTags=["LUE"])
+    self.nwsTopicSearch = self.etiConn.topics().search(query="NWS")
+    self.anonymousTopicSearch = self.etiConn.topics(allowedTags=["Anonymous"]).search(query="")
+    self.multiTagTopicSearch = self.etiConn.topics(allowedTags=["LUE", "Anonymous"], forbiddenTags=["Sports", "Gaming"]).search(query="the")
+    self.archivesTopicSearch = self.etiConn.topics().search(query="Archived")
+    self.emptyTopicSearch = self.etiConn.topics().search(query="abiejgapsodijf")
+    self.contradictoryTopicSearch = self.etiConn.topics(allowedTags=["LUE"], forbiddenTags=["LUE"]).search()
 
-    self.emptyTopicList = self.etiConn.topics.search(maxTime=pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1)), maxID=1)
-    self.currentTopicList = self.etiConn.topics.search()
-    self.anonymousTopicList = self.etiConn.topics.search(allowedTags=["Anonymous"])
+    self.emptyTopicList = self.etiConn.topics().search(maxTime=pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1)), maxID=1)
+    self.currentTopicList = self.etiConn.topics().search()
+    self.anonymousTopicList = self.etiConn.topics(allowedTags=["Anonymous"]).search()
 
   def testgetTopicList(self):
     assert isinstance(self.emptyTopicList, albatross.TopicList) and len(self.emptyTopicList) == 0
@@ -39,11 +39,11 @@ class testTopicListClass(object):
   def testgetTopicInfoFromListing(self):
     assert isinstance(self.currentTopicList[0], albatross.Topic)
     assert isinstance(self.cyberlightTopicDict, dict) and len(self.cyberlightTopicDict) > 0 and 'tags' in self.cyberlightTopicDict and 'NWS' in [tag.name for tag in self.cyberlightTopicDict['tags']]
-    assert isinstance(self.etiConn.topics.parse(self.currentTopicListPage), dict) and len(self.etiConn.topics.parse(self.currentTopicListPage)) > 0
+    assert isinstance(self.etiConn.topics().parse(self.currentTopicListPage), dict) and len(self.etiConn.topics().parse(self.currentTopicListPage)) > 0
 
   @raises(albatross.TopicListError)
   def testgetTopicInfoFromEmptyListing(self):
-    self.etiConn.topics.parse(self.emptyTopicSearchList)
+    self.etiConn.topics().parse(self.emptyTopicSearchList)
 
   @raises(IndexError)
   def testgetTopicInfoFromEmptyListing(self):

@@ -37,7 +37,7 @@ class testConnectionClass(object):
     assert isinstance(self.etiConn.page('https://endoftheinter.net'), albatross.Page)
 
   def testtopics(self):
-    assert isinstance(self.etiConn.topics, albatross.TopicList)
+    assert isinstance(self.etiConn.topics(), albatross.TopicList)
 
   def testtopic(self):
     assert isinstance(self.etiConn.topic(1), albatross.Topic)

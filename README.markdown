@@ -35,7 +35,7 @@ To get started, simply install Albatross by doing `sudo python setup.py install`
 
     import albatross
     etiConn = albatross.Connection(username="LlamaGuy", password="hunter2")
-    sampleTopics = etiConn.topics.search(query="luelinks", allowedTags=["LUE"], forbiddenTags=["NWS"])
+    sampleTopics = etiConn.topics(allowedTags=["LUE"], forbiddenTags=["NWS"]).search(query="luelinks")
     print sampleTopics[0]
 
 Alternatively, you can also provide a cookie string to Albatross in lieu of a username and password:
@@ -54,7 +54,7 @@ You can fetch topic posts like so:
     # alternatively:
     oneTopic = albatross.Topic(etiConn, 7823107)
     # or even:
-    oneTopic = etiConn.topics.search(query="Ritsu's", allowedTags=["Anime"])[0]
+    oneTopic = etiConn.topics(allowedTags=["Anime"]).search(query="Ritsu's")[0]
     print oneTopic.posts()[0]
 
 And from there, post info like so:
@@ -70,7 +70,9 @@ Finally, Albatross can also pull information about tags from ETI. For instance, 
     
     activeTags = etiConn.tags(active=True)
     someTags = etiConn.tags(tags=["LUE", "Anonymous", "Anime"])
+    someTagsTopics = someTags.topics().search()
     animeTag = etiConn.tag("Anime")
+    animeTagTopics = animeTag.topics().search()
     print animeTag
 
 For more info on available arguments and methods, please consult the help() documentation in your python console.

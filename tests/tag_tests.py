@@ -32,3 +32,7 @@ class testTagClass(object):
   @raises(albatross.InvalidTagError)
   def testgetInvalidTagInfo(self):
     self.invalidTag.description
+
+  def testgetTagTopics(self):
+    assert isinstance(self.tvTag.topics().search(), albatross.TopicList) and len(self.tvTag.topics().search()) > 0 and all(["TV" in [tag.name for tag in topic.tags] for topic in self.tvTag.topics().search()])
+    assert isinstance(self.threeTags.topics().search(), albatross.TopicList) and len(self.threeTags.topics().search()) > 0 and all([("TV" in [tag.name for tag in topic.tags]) or ("LUE" in [tag.name for tag in topic.tags]) or ("Glee" in [tag.name for tag in topic.tags]) for topic in self.threeTags.topics().search()])

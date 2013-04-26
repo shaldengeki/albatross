@@ -5,7 +5,7 @@ import pytz
 
 class testLinkClass(object):
   @classmethod
-  def setUpClass(klass):
+  def setUpClass(self):
     pass
   # fuck llamaguy
   # def testgetLinkTitle(self):

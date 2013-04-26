@@ -175,3 +175,6 @@ class Tag(object):
     if self._dependent is None:
       self.load()
     return self._dependent
+
+  def topics(self):
+    return self.connection.topics(allowedTags=[self.name])

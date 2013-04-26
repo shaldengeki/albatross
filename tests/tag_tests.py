@@ -14,6 +14,7 @@ class testTagClass(object):
     self.invalidTag = self.etiConn.tag("paoisjdfpoasijdfpoasidjfpaosijf")
     self.lueTag = self.etiConn.tag("LUE")
     self.tvTag = self.etiConn.tag("TV")
+    self.gleeTag = self.etiConn.tag("Glee")
     self.threeTags = self.etiConn.tags(tags=["TV", "LUE", "Glee"])
 
   def testgetTagInfo(self):
@@ -34,5 +35,5 @@ class testTagClass(object):
     self.invalidTag.description
 
   def testgetTagTopics(self):
-    assert isinstance(self.tvTag.topics().search(), albatross.TopicList) and len(self.tvTag.topics().search()) > 0 and all(["TV" in [tag.name for tag in topic.tags] for topic in self.tvTag.topics().search()])
-    assert isinstance(self.threeTags.topics().search(), albatross.TopicList) and len(self.threeTags.topics().search()) > 0 and all([("TV" in [tag.name for tag in topic.tags]) or ("LUE" in [tag.name for tag in topic.tags]) or ("Glee" in [tag.name for tag in topic.tags]) for topic in self.threeTags.topics().search()])
+    assert isinstance(self.tvTag.topics().search(), albatross.TopicList) and len(self.tvTag.topics().search()) > 0 and all([self.tvTag in topic.tags for topic in self.tvTag.topics().search()])
+    assert isinstance(self.threeTags.topics().search(), albatross.TopicList) and len(self.threeTags.topics().search()) > 0 and all([self.tvTag in topic.tags or self.lueTag in topic.tags or self.gleeTag in topic.tags for topic in self.threeTags.topics().search()])

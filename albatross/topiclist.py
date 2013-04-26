@@ -17,9 +17,6 @@ import urllib
 import urllib2
 
 import albatross
-from topic import Topic
-from taglist import TagList
-from tag import Tag
 
 class TopicListError(albatross.Error):
   def __init__(self, topicList):
@@ -52,6 +49,8 @@ class TopicList(object):
       yield topic
   def __reversed__(self):
     return self.topics[::-1]
+  def __contains__(self, topic):
+    return any((topic.id == containedTopic.id for containedTopic in self.topics))
 
   def formatTagQueryString(self):
     """
@@ -86,12 +85,12 @@ class TopicList(object):
     if thisTopic.group('closed'):
       closedTopic = True
     if thisTopic.group('tags'):
-      tags = TagList(self.connection, tags=[parser.unescape(re.search(r'\"\>(?P<name>[^<]+)', tag).group('name')) for tag in thisTopic.group('tags').split("</a>") if tag])
+      tags = self.connection.tags(tags=[parser.unescape(re.search(r'\"\>(?P<name>[^<]+)', tag).group('name')) for tag in thisTopic.group('tags').split("</a>") if tag])
     else:
-      tags = TagList(self.connection, tags=[])
+      tags = self.connection.tags(tags=[])
     # If we're searching for just one tag, it won't show in the topic list, so we've got to manually-append it.
     if self._allowedTags and len(self._allowedTags) == 1:
-      tags.append(Tag(self.connection, self._allowedTags[0]))
+      tags.append(self.connection.tag(self._allowedTags[0]))
     if thisTopic.group('lastPostTime'):
       lastPostTime = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(thisTopic.group('lastPostTime'), "%m/%d/%Y %H:%M"))
     else:
@@ -133,7 +132,7 @@ class TopicList(object):
       for topic in topicListingHTML:
         topicInfo = self.parse(topic)
         if topicInfo and (not activeSince or topicInfo['lastPostTime'] > activeSince):
-          self._topics.append(Topic(self.connection, topicInfo['id']).set(topicInfo))
+          self._topics.append(self.connection.topic(topicInfo['id']).set(topicInfo))
       
       if len(self._topics) == originalTopicsNum:
         break

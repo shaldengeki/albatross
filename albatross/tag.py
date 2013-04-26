@@ -63,6 +63,9 @@ class Tag(object):
       "Dependent tags: " + ", ".join([tag.name for tag in self.dependent])
       ])
 
+  def __index__(self):
+    return self.name
+
   def set(self, attrDict):
     """
     Sets attributes of this tag object with keys found in dict.

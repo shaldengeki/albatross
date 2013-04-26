@@ -22,6 +22,10 @@ class testTopicClass(object):
     self.starcraftTopic = self.etiConn.topic(6951014)
     self.anonymousTopic = self.etiConn.topic(8431797)
 
+    self.lueTag = self.etiConn.tag("LUE")
+    self.archivedTag = self.etiConn.tag("Archived")
+    self.starcraftTag = self.etiConn.tag("Starcraft")
+
   @raises(TypeError)
   def testNoIDInvalidTopic(self):
     self.etiConn.topic()
@@ -73,8 +77,8 @@ class testTopicClass(object):
     assert isinstance(self.archivedTopic.posts(), list) and self.archivedTopic.posts() and len(self.archivedTopic.posts()) == 106
 
   def testgetTopicTags(self):
-    assert isinstance(self.validTopic.tags, albatross.TagList) and "LUE" in self.validTopic.tags._tagNames
-    assert isinstance(self.starcraftTopic.tags, albatross.TagList) and len(self.starcraftTopic.tags) == 3 and "Archived" in self.starcraftTopic.tags._tagNames and "Starcraft" in self.starcraftTopic.tags._tagNames and "LUE" in self.starcraftTopic.tags._tagNames
+    assert isinstance(self.validTopic.tags, albatross.TagList) and self.lueTag in self.validTopic.tags
+    assert isinstance(self.starcraftTopic.tags, albatross.TagList) and len(self.starcraftTopic.tags) == 3 and self.archivedTag in self.starcraftTopic.tags and self.starcraftTag in self.starcraftTopic.tags and self.lueTag in self.starcraftTopic.tags
 
   def testgetTopicUser(self):
     assert self.anonymousTopic.user['id'] == 0 and self.anonymousTopic.user['name'] == 'Human'

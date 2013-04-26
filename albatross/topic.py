@@ -37,9 +37,6 @@ class ArchivedTopicError(InvalidTopicError):
       "Archived: " + unicode(self._archived)
       ])
 
-import post
-import taglist
-
 class Topic(object):
   '''
   Topic-loading object for albatross.
@@ -73,6 +70,15 @@ class Topic(object):
       "Posts:" + unicode(self.postCount),
       "Date: " + self.date.strftime("%m/%d/%Y %I:%M:%S %p")
       ])
+
+  def __len__(self):
+    return len(self.posts())
+
+  def __contains__(self, post):
+    return post.id in self._postIDs
+
+  def __index__(self):
+    return self.id
 
   def set(self, attrDict):
     """
@@ -128,11 +134,11 @@ class Topic(object):
         if tagName.startswith("[") and tagName.endswith("]"):
           tagName = tagName[1:-1]
         cleanedTagNames.append(parser.unescape(tagName.replace("_", " ")))
-      self._tags = taglist.TagList(self.connection, tags=cleanedTagNames)
+      self._tags = self.connection.tags(tags=cleanedTagNames)
       lastPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + unicode(self.id) + '&page=' + unicode(self._pages))
       if lastPage.authed:
         lastPagePosts = self.getPagePosts(lastPage.html)
-        lastPost = post.Post(self.connection, 0, self)
+        lastPost = self.connection.post(1, self)
         lastPost = lastPost.set(lastPost.parse(lastPagePosts[-1]))
         self._lastPostTime = lastPost.date
       else:
@@ -215,9 +221,9 @@ class Topic(object):
     # parse this page and append posts to post list.
     thisPagePosts = self.getPagePosts(text)
     for postRow in thisPagePosts:
-      newPost = post.Post(self.connection, 0, self)
+      newPost = self.connection.post(1, self)
       newPost.set(newPost.parse(postRow))
-      if newPost.id not in self._postIDs:
+      if newPost not in self:
         self._postIDs[newPost.id] = 1
         self._posts.append(newPost)
 

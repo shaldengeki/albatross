@@ -46,6 +46,8 @@ class TagList(object):
   def __iter__(self):
     for tagObj in self.tags:
       yield tagObj
+  def __contains__(self, tag):
+    return tag.name in self._tagNames
   def __reversed__(self):
     return self.tags[::-1]
 
@@ -61,7 +63,7 @@ class TagList(object):
         self.connection.parallelCurl.startrequest(url, self.appendTag)
         return
     # parse the text given into a tag object to append to tagList.
-    thisTag = tag.Tag(self.connection, "")
+    thisTag = self.connection.tag("")
     try:
       thisTag.set(thisTag.parse(text))
     except tag.InvalidTagError:
@@ -80,8 +82,7 @@ class TagList(object):
     """
     self._tags = []
     if self._tagNames:
-      for tagName in self._tagNames:
-        self._tags.append(tag.Tag(self.connection, tagName))
+      self._tags = [self.connection.tag(tagName) for tagName in self._tagNames]
 
   @property
   def tags(self):
@@ -90,7 +91,7 @@ class TagList(object):
     return self._tags
 
   def append(self, appTag):
-    if appTag.name not in self._tagNames:
+    if appTag not in self:
       self._tagNames[appTag.name] = 1
       if isinstance(self._tags, list):
         self._tags.append(appTag)

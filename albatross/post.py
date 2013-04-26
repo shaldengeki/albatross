@@ -62,6 +62,12 @@ class Post(object):
       unicode(self.sig)
       ])
 
+  def __contains__(self, searchString):
+    return searchString in self.html
+
+  def __index__(self):
+    return self.id
+
   def set(self, attrDict):
     """
     Sets attributes of this post object with keys found in dict.

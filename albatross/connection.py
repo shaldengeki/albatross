@@ -20,6 +20,7 @@ from topic import Topic
 from topiclist import TopicList
 from tag import Tag
 from taglist import TagList
+from post import Post
 
 class UnauthorizedError(albatross.Error):
   def __init__(self, cxn):
@@ -192,3 +193,6 @@ class Connection(object):
 
   def tag(self, name):
     return Tag(self, name)
+
+  def post(self, id, topic):
+    return Post(self, id, topic)

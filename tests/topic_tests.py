@@ -23,6 +23,7 @@ class testTopicClass(object):
     klass.multiPageTopic = klass.etiConn.topic(6240806, page=2)
     klass.lastPageTopic = klass.etiConn.topic(6240806, page=3)
     klass.starcraftTopic = klass.etiConn.topic(6951014)
+    klass.anonymousTopic = klass.etiConn.topic(8431797)
 
   def testcheckTopicValid(self):
     assert isinstance(self.validTopic, albatross.Topic)
@@ -79,6 +80,9 @@ class testTopicClass(object):
     self.invalidTopic.tags
 
   def testgetTopicTags(self):
-    print self.starcraftTopic.tags._tagNames
     assert isinstance(self.validTopic.tags, albatross.TagList) and "LUE" in self.validTopic.tags._tagNames
     assert isinstance(self.starcraftTopic.tags, albatross.TagList) and len(self.starcraftTopic.tags) == 3 and "Archived" in self.starcraftTopic.tags._tagNames and "Starcraft" in self.starcraftTopic.tags._tagNames and "LUE" in self.starcraftTopic.tags._tagNames
+
+  def testgetTopicUser(self):
+    assert self.anonymousTopic.user['id'] == 0 and self.anonymousTopic.user['name'] == 'Human'
+    assert self.starcraftTopic.user['id'] == 4662 and self.starcraftTopic.user['name'] == 'tsutter810'

@@ -3,24 +3,36 @@ import albatross
 
 class testPageClass(object):
   @classmethod
-  def setUpClass(klass):
+  def setUpClass(self):
     # reads ETI login credentials from credentials.txt and cookieString.txt in the current directory.
     credentials = open('credentials.txt', 'r').readlines()[0].strip().split(',')
     
-    klass.username = credentials[0]
-    klass.password = credentials[1].rstrip()
-    klass.etiConn = albatross.Connection(username=klass.username, password=klass.password, loginSite=albatross.SITE_MOBILE)
+    self.username = credentials[0]
+    self.password = credentials[1].rstrip()
+    self.etiConn = albatross.Connection(username=self.username, password=self.password, loginSite=albatross.SITE_MOBILE)
+    self.fakeConn = albatross.Connection(username="a", password="b", loginSite=albatross.SITE_MOBILE)
 
-    # main page HTML for getEnclosedString test.
-    klass.mainPageText = klass.etiConn.page('https://endoftheinter.net/main.php').html
-    
-    # klass.validTopicID = klass.etiConn.topics.search(allowedTags=["LUE"])[0].id
-    # klass.validTopic = klass.etiConn.topic(klass.validTopicID)
-    # klass.archivedRedirectTopic = klass.etiConn.topic(6240806)
-    # klass.validTopicHeader = klass.etiConn.page(klass.etiConn.topic(klass.validTopicID).page(1).url).header
-    # klass.archivedRedirectText = klass.etiConn.page(klass.etiConn.topic(6240806).page(1).url).header
+    self.mainPage = self.etiConn.page('https://endoftheinter.net/main.php')
+    self.doesntNeedAuthPage = self.fakeConn.page('https://endoftheinter.net/index.php')
+    self.unauthedPage = self.fakeConn.page('https://endoftheinter.net/index.php', authed=False)
+    self.needsAuthPage = self.fakeConn.page('https://endoftheinter.net/main.php')
 
-  def testgetEnclosedString(self):
-    assert not albatross.getEnclosedString(self.mainPageText, 'aspdfasdpofijas', 'aspdfasdpofijas')
-    assert albatross.getEnclosedString(self.mainPageText, '<h1>', '</h1>') == 'End of the Internet'    
-    assert not albatross.getEnclosedString("", "<h1>", "</h1>")
+  def testauthed(self):
+    assert self.mainPage.authed == True
+    assert self.unauthedPage.authed == False
+
+  @raises(albatross.UnauthorizedError)
+  def testAuthedPageWithUnauthedConn(self):
+    self.needsAuthPage.html
+
+  @raises(albatross.UnauthorizedError)
+  def testUnauthedPageWithAuthedConn(self):
+    self.doesntNeedAuthPage.html
+
+  def testhtml(self):
+    assert isinstance(self.mainPage.html, str) or isinstance(self.mainPage.html, unicode) and "<h1>End of the Internet</h1>" in self.mainPage.html
+    assert isinstance(self.unauthedPage.html, str) or isinstance(self.unauthedPage.html, unicode) and "Das Ende des Internets" in self.unauthedPage.html
+
+  def testheader(self):
+    assert isinstance(self.mainPage.header, str) or isinstance(self.mainPage.header, unicode) and len(self.mainPage.header) > 0
+    assert isinstance(self.unauthedPage.header, str) or isinstance(self.unauthedPage.header, unicode) and len(self.unauthedPage.header) > 0

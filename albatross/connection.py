@@ -66,7 +66,7 @@ class Connection(object):
     
   def parseCookieHeader(self, string):
     """
-    Given a cookie response header returned by pyCurl, return an array of cookie key/values.
+    Given a cookie response header returned by pyCurl, return a string of cookie key/values.
     """
     
     string_array = str(string).split("\r\n")

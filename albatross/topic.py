@@ -46,8 +46,10 @@ class Topic(object):
   '''
   def __init__(self, conn, id, page=1):
     self.connection = conn
-    self.id = int(id)
+    self.id = id
     self.page = page
+    if not isinstance(id, int) or int(id) < 1:
+      raise InvalidTopicError(self)
     self._closed = None
     self._archived = None
     self._date = None

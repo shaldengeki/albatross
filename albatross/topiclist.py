@@ -9,10 +9,12 @@
 '''
 import calendar
 import datetime
+import HTMLParser
 import pytz
 import re
 import sys
 import urllib
+import urllib2
 
 import albatross
 from topic import Topic
@@ -52,16 +54,16 @@ class TopicList(object):
     """
     Takes a list of tag names.
     Returns a string formatted for ETI's topic search URL.
-    E.g. "Posted-Anonymous+Starcraft+Programming"
+    E.g. "[Posted]-[Anonymous]+[Starcraft]+[Programming]"
     """
     if allowed is None:
       allowed = []
     if forbidden is None:
       forbidden = []
     if len(forbidden) > 0:
-      return "-".join(["+".join(allowed), "-".join(forbidden)])
+      return "-".join(["+".join(["[" + urllib2.quote(tag) + "]" for tag in allowed]), "-".join(["[" + urllib2.quote(tag) + "]" for tag in forbidden])])
     else:
-      return "+".join(allowed)
+      return "+".join(["[" + urllib2.quote(tag) + "]" for tag in allowed])
 
   def parse(self, text):
     """
@@ -70,6 +72,7 @@ class TopicList(object):
     thisTopic = re.search(r'\<td\ class\=\"oh\"\>\<div\ class\=\"fl\"\>((?P<closed><span\ class\=\"closed\"\>))?\<a\ href\=\"//[a-z]+\.endoftheinter\.net/showmessages\.php\?topic\=(?P<topicID>[0-9]+)\">(<b>)?(?P<title>[^<]+)(</b>)?\</a\>(</span>)?</div\>\<div\ class\=\"fr\"\>((?P<tags>(.+?))\ )?\<\/div\></td\>\<td\>(?P<moneybags>\<span\ style\=\"color\:green\;font\-weight\:bold\"\>\$\ \$\<\/span\>)?\ *(\<a\ href\=\"//endoftheinter\.net/profile\.php\?user=(?P<userID>[0-9]+)\"\>(?P<username>[^<]+)\</a\>)?(Human)?\ *(?P<moneybags2>\<span\ style\=\"color\:green\;font\-weight\:bold\"\>\$\ \$\<\/span\>)?\<\/td\>\<td\>(?P<postCount>[0-9]+)(\<span id\=\"u[0-9]+_[0-9]+\"\> \(\<a href\=\"//(boards)?(archives)?\.endoftheinter\.net/showmessages\.php\?topic\=[0-9]+(\&amp\;page\=[0-9]+)?\#m[0-9]+\"\>\+(?P<newPostCount>[0-9]+)\</a\>\)\&nbsp\;\<a href\=\"\#\" onclick\=\"return clearBookmark\([0-9]+\, \$\(\&quot\;u[0-9]+\_[0-9]+\&quot\;\)\)\"\>x\</a\>\</span\>)?\</td\>\<td\>(?P<lastPostTime>[^>]+)\</td\>', text)
     if not thisTopic:
       raise TopicListError(self)
+    parser = HTMLParser.HTMLParser()
     user = {'userID': 0, 'username': 'Human', 'moneybags': False}
     if thisTopic.group('userID') and thisTopic.group('username'):
       user['userID'] = int(thisTopic.group('userID'))
@@ -83,7 +86,7 @@ class TopicList(object):
     if thisTopic.group('closed'):
       closedTopic = True
     if thisTopic.group('tags'):
-      tags = TagList(self.connection, tags=[re.search(r'\"\>(?P<name>[^<]+)', tag).group('name') for tag in thisTopic.group('tags').split("</a>") if tag])
+      tags = TagList(self.connection, tags=[parser.unescape(re.search(r'\"\>(?P<name>[^<]+)', tag).group('name')) for tag in thisTopic.group('tags').split("</a>") if tag])
     else:
       tags = TagList(self.connection, tags=[])
     if thisTopic.group('lastPostTime'):

@@ -15,23 +15,32 @@ class testTopicClass(object):
 
     klass.centralTimezone = pytz.timezone('America/Chicago')
 
-    klass.validTopicID = klass.etiConn.topics.search(allowedTags=["LUE"])[0].id
-
-    klass.validTopic = klass.etiConn.topic(klass.validTopicID)
+    klass.validTopic = klass.etiConn.topics.search(allowedTags=["LUE"])[0]
     klass.archivedTopic = klass.etiConn.topic(6240806)
-    klass.invalidTopic = klass.etiConn.topic(0)
     klass.multiPageTopic = klass.etiConn.topic(6240806, page=2)
     klass.lastPageTopic = klass.etiConn.topic(6240806, page=3)
     klass.starcraftTopic = klass.etiConn.topic(6951014)
     klass.anonymousTopic = klass.etiConn.topic(8431797)
 
+  @raises(TypeError)
+  def testNoIDInvalidTopic(self):
+    self.etiConn.topic()
+
+  @raises(albatross.InvalidTopicError)
+  def testNegativeInvalidTopic(self):
+    self.etiConn.topic(-1)
+
+  @raises(albatross.InvalidTopicError)
+  def testBoolInvalidTopic(self):
+    self.etiConn.topic(False)
+
+  @raises(albatross.InvalidTopicError)
+  def testFloatInvalidTopic(self):
+    self.etiConn.topic(1.5)
+
   def testcheckTopicValid(self):
     assert isinstance(self.validTopic, albatross.Topic)
 
-  @raises(albatross.InvalidTopicError)
-  def testcheckTopicInvalid(self):
-    self.invalidTopic.load()
-    
   def testcheckArchivedTopic(self):
     assert isinstance(self.archivedTopic.archived, bool) and self.archivedTopic.archived
     assert isinstance(self.validTopic.archived, bool) and not self.validTopic.archived
@@ -45,16 +54,8 @@ class testTopicClass(object):
   def testgetTopicTitle(self):
     assert isinstance(self.starcraftTopic.title, str) and self.starcraftTopic.title
 
-  @raises(albatross.InvalidTopicError)
-  def testgetInvalidTopicTitle(self):
-    self.invalidTopic.title
-
   def testgetTopicDate(self):
     assert self.starcraftTopic.date and isinstance(self.starcraftTopic.date, datetime.datetime) and self.starcraftTopic.date == datetime.datetime.fromtimestamp(1296773983, tz=self.centralTimezone)
-
-  @raises(albatross.InvalidTopicError)
-  def testinvalidTopicDate(self):
-    self.invalidTopic.date
 
   def testgetTopicPageNum(self):
     assert self.starcraftTopic.page == 1
@@ -66,18 +67,10 @@ class testTopicClass(object):
     assert self.multiPageTopic.pages == 3
     assert self.lastPageTopic.pages == 3
 
-  @raises(albatross.InvalidTopicError)
-  def testgetInvalidTopicPosts(self):
-    self.invalidTopic.posts()
-
   def testgetTopicPosts(self):
     assert isinstance(self.validTopic.posts(), list) and self.validTopic.posts()
     assert isinstance(self.starcraftTopic.posts(), list) and self.starcraftTopic.posts() and len(self.starcraftTopic.posts()) == 2
     assert isinstance(self.archivedTopic.posts(), list) and self.archivedTopic.posts() and len(self.archivedTopic.posts()) == 106
-
-  @raises(albatross.InvalidTopicError)
-  def testgetInvalidTopicTags(self):
-    self.invalidTopic.tags
 
   def testgetTopicTags(self):
     assert isinstance(self.validTopic.tags, albatross.TagList) and "LUE" in self.validTopic.tags._tagNames

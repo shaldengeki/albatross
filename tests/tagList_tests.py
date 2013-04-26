@@ -3,15 +3,17 @@ import albatross
 
 class testTagListClass(object):
   @classmethod
-  def setUpClass(klass):
+  def setUpClass(self):
     # reads ETI login credentials from credentials.txt and cookieString.txt in the current directory.
     credentials = open('credentials.txt', 'r').readlines()[0].strip().split(',')
     
-    klass.username = credentials[0]
-    klass.password = credentials[1].rstrip()
-    klass.etiConn = albatross.Connection(username=klass.username, password=klass.password, loginSite=albatross.SITE_MOBILE)
+    self.username = credentials[0]
+    self.password = credentials[1].rstrip()
+    self.etiConn = albatross.Connection(username=self.username, password=self.password, loginSite=albatross.SITE_MOBILE)
 
-    klass.activeTagList = klass.etiConn.tags(active=True)
+    self.activeTagList = self.etiConn.tags(active=True)
+    self.emptyTagList = self.etiConn.tags(tags=[])
+    self.tagList = self.etiConn.tags(tags=["LUE", "TV", "Anime"])
 
   def testgetActiveTags(self):
     assert isinstance(self.activeTagList, albatross.TagList) and len(self.activeTagList) > 0

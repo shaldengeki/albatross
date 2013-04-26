@@ -5,30 +5,35 @@ import pytz
 
 class testPostClass(object):
   @classmethod
-  def setUpClass(klass):
+  def setUpClass(self):
     # reads ETI login credentials from credentials.txt and cookieString.txt in the current directory.
     credentials = open('credentials.txt', 'r').readlines()[0].strip().split(',')
     
-    klass.username = credentials[0]
-    klass.password = credentials[1].rstrip()
-    klass.etiConn = albatross.Connection(username=klass.username, password=klass.password, loginSite=albatross.SITE_MOBILE)
+    self.username = credentials[0]
+    self.password = credentials[1].rstrip()
+    self.etiConn = albatross.Connection(username=self.username, password=self.password, loginSite=albatross.SITE_MOBILE)
 
-    klass.centralTimezone = pytz.timezone('America/Chicago')
+    self.centralTimezone = pytz.timezone('America/Chicago')
 
-    klass.validTopic = klass.etiConn.topics.search(allowedTags=["LUE"], forbiddenTags=["Anonymous"])[0]
-    klass.validPost = klass.validTopic.posts()[0]
-    klass.archivedTopic = klass.etiConn.topic(6240806)
-    klass.archivedPost = klass.etiConn.post(67630266, klass.archivedTopic)
-    klass.starcraftTopic = klass.etiConn.topic(6951014)
-    klass.starcraftPost = klass.etiConn.post(81909003, klass.starcraftTopic)
-    klass.anonymousTopic = klass.etiConn.topic(8431797)
-    klass.anonymousPost = klass.etiConn.post(124662128, klass.anonymousTopic)
+    self.validTopic = self.etiConn.topics.search(allowedTags=["LUE"], forbiddenTags=["Anonymous"])[0]
+    self.validPost = self.validTopic.posts()[0]
+    self.archivedTopic = self.etiConn.topic(6240806)
+    self.archivedPost = self.etiConn.post(67630266, self.archivedTopic)
+    self.starcraftTopic = self.etiConn.topic(6951014)
+    self.starcraftPost = self.etiConn.post(81909003, self.starcraftTopic)
+    self.anonymousTopic = self.etiConn.topic(8431797)
+    self.anonymousPost = self.etiConn.post(124662128, self.anonymousTopic)
 
   def testgetPostHTML(self):
     assert isinstance(self.validPost.html, str) or isinstance(self.validPost.html, unicode) and len(self.validPost.html) > 0
     assert self.starcraftPost.html == 'and does that figure in to who you get matched up against on ladder<br />'
     assert self.archivedPost.html == 'I think Moltar and I are the only ones. <br />'
     assert self.anonymousPost.html == "two bra and panty sets, a casual dress, a six pack of panties, and six assorted patterned pantyhose.<br />\n<br />\ni'm really glad i have the opportunity to try this now."
+
+  def testgetPostSig(self):
+    assert self.starcraftPost.sig == """<span class="pr">Big Strange Dojo: Big. Strange -- Vortex.</span>"""
+    assert self.archivedPost.sig == """see this is the fundamental flaw with the check check-plus check-minus system<br />\n<a class="l" target="_blank" title="http://www.youtube.com/watch?v=7sMD6W0qhYk" href="http://www.youtube.com/watch?v=7sMD6W0qhYk">http://www.youtube.com/watch?v=7sMD6W0qhYk</a> <span class="pr"><b>gpideal isn't gay.</b></span>"""
+    assert self.anonymousPost.sig == ""
 
   def testgetPostID(self):
     assert isinstance(self.validPost.id, int) and self.validPost.id > 0

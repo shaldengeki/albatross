@@ -28,17 +28,16 @@ def getEnclosedString(text, startString='', endString='', multiLine=False, greed
   """
   if not text or not len(text):
     return False
-  flags = False
-  if multiLine:
-    flags = re.DOTALL
-  greedyPart = "?"
-  if greedy:
-    greedyPart = ""    
-  stringMatch = re.search(str(startString) + r'(?P<return>.*' + greedyPart + r')' + str(endString), text, flags=flags)
+  flags = re.DOTALL if multiLine else False
+
+  # Default to non-greedy UNLESS greedy is provided or end string is empty (user is looking for everything past a certain point)
+  greedyPart = "" if greedy or endString == '' else "?"
+  startString = "^.*?" if startString == '' else startString
+  endString = ".*?$" if endString == '' else endString
+  stringMatch = re.search(str(startString) + (r"(?P<return>.*%s)" % greedyPart) + str(endString), text, flags=flags)
   if not stringMatch or stringMatch.group('return') is None:
     return False
   if isinstance(stringMatch.group('return'), unicode):
     return stringMatch.group('return')
   else:
     return unicode(stringMatch.group('return'), encoding='latin-1').encode('utf-8')
-

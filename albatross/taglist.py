@@ -76,10 +76,10 @@ class TagList(object):
 
   def load(self):
     """
-    Returns all the information that the currently signed-in user can view about the tag(s).
+    Resets self._tags with naive tag objects.
     """
+    self._tags = []
     if self._tagNames:
-      self._tags = []
       for tagName in self._tagNames:
         self._tags.append(tag.Tag(self.connection, tagName))
 

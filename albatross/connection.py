@@ -69,7 +69,7 @@ class Connection(object):
     Given a cookie response header returned by pyCurl, return a string of cookie key/values.
     """
     
-    string_array = str(string).split("\r\n")
+    string_array = unicode(string).split("\r\n")
     cookieList = []
     for line in string_array:
       if line.startswith("Set-Cookie:"):
@@ -90,7 +90,7 @@ class Connection(object):
     loginHeaders.setopt(pycurl.POST, 1)
     loginHeaders.setopt(pycurl.HEADER, True)
     loginHeaders.setopt(pycurl.URL, self.loginSite["url"]+'index.php')
-    loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([(self.loginSite["fields"]["username"], str(self.username)), (self.loginSite["fields"]["password"], str(self.password)), ('r', '')])))
+    loginHeaders.setopt(pycurl.POSTFIELDS, urllib.urlencode(dict([(self.loginSite["fields"]["username"], unicode(self.username).encode('utf-8')), (self.loginSite["fields"]["password"], unicode(self.password).encode('utf-8')), ('r', '')])))
     loginHeaders.setopt(pycurl.USERAGENT, 'Albatross')
     loginHeaders.setopt(pycurl.WRITEFUNCTION, response.write)
     
@@ -117,7 +117,7 @@ class Connection(object):
       pycurl.SSL_VERIFYPEER: False,
       pycurl.SSL_VERIFYHOST: False,
       pycurl.FOLLOWLOCATION: True, 
-      pycurl.COOKIE: self.cookieString
+      pycurl.COOKIE: self.cookieString.encode('utf-8') if self.cookieString else u""
     }
     try:
       self.parallelCurl.setoptions(self.parallelCurlOptions)
@@ -144,6 +144,7 @@ class Connection(object):
   def etiUp(self, retries=10):
     """
     Checks to see if ETI is having server / DNS issues.
+    Note that this is necessarily unable to distinguish issues on your end from issues on ETI's end!
     Returns a boolean.
     """
     for x in range(retries): # Limit the number of retries.
@@ -154,7 +155,7 @@ class Connection(object):
       pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
       pageRequest.setopt(pycurl.URL, "https://endoftheinter.net/index.php")
       pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
-      pageRequest.setopt(pycurl.COOKIE, str(self.cookieString))
+      pageRequest.setopt(pycurl.COOKIE, unicode(self.cookieString).encode('utf-8'))
       pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
       try:
         pageRequest.perform()

@@ -30,9 +30,9 @@ class testPageClass(object):
     self.doesntNeedAuthPage.html
 
   def testhtml(self):
-    assert isinstance(self.mainPage.html, str) or isinstance(self.mainPage.html, unicode) and "<h1>End of the Internet</h1>" in self.mainPage.html
-    assert isinstance(self.unauthedPage.html, str) or isinstance(self.unauthedPage.html, unicode) and "Das Ende des Internets" in self.unauthedPage.html
+    assert isinstance(self.mainPage.html, unicode) and "<h1>End of the Internet</h1>" in self.mainPage.html
+    assert isinstance(self.unauthedPage.html, unicode) and "Das Ende des Internets" in self.unauthedPage.html
 
   def testheader(self):
-    assert isinstance(self.mainPage.header, str) or isinstance(self.mainPage.header, unicode) and len(self.mainPage.header) > 0
-    assert isinstance(self.unauthedPage.header, str) or isinstance(self.unauthedPage.header, unicode) and len(self.unauthedPage.header) > 0
+    assert isinstance(self.mainPage.header, unicode) and len(self.mainPage.header) > 0
+    assert isinstance(self.unauthedPage.header, unicode) and len(self.unauthedPage.header) > 0

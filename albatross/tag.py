@@ -24,7 +24,7 @@ class InvalidTagError(albatross.Error):
   def __str__(self):
     return "\n".join([
         super(InvalidTagError, self).__str__(),
-        "Name: " + str(self.tag.name)
+        "Name: " + unicode(self.tag.name)
       ])
 
 class MalformedTagError(InvalidTagError):
@@ -34,7 +34,7 @@ class MalformedTagError(InvalidTagError):
   def __str__(self):
     return "\n".join([
         super(MalformedTagError, self).__str__(),
-        "Text: " + str(self.text)
+        "Text: " + unicode(self.text)
       ])
 
 class Tag(object):
@@ -49,6 +49,19 @@ class Tag(object):
     self._related = None
     self._forbidden = None
     self._dependent = None
+
+  def __str__(self):
+    return "\n".join([
+      "Tag: " + unicode(self.name),
+      "-"*(len(self.name) + 5),
+      unicode(self.description),
+      "Staff:",
+      "------",
+      "\n".join([staff['name'] + ": " + staff['role'] for staff in self.staff]),
+      "Related tags: " + ", ".join([tag.name for tag in self.related]),
+      "Forbidden tags: " + ", ".join([tag.name for tag in self.forbidden]),
+      "Dependent tags: " + ", ".join([tag.name for tag in self.dependent])
+      ])
 
   def set(self, attrDict):
     """
@@ -71,9 +84,9 @@ class Tag(object):
       tagJSON = json.loads(text)
     except ValueError:
       print "Warning: invalid JSON object provided by ETI ajax tag interface."
-      raise MalformedTagError(self, str(tagJSON))
+      raise MalformedTagError(self, unicode(tagJSON))
     if len(tagJSON) < 1:
-      raise MalformedTagError(self, str(tagJSON))
+      raise MalformedTagError(self, unicode(tagJSON))
     tagJSON = tagJSON[0]
     name = tagJSON[0]
     if name.startswith("["):
@@ -89,7 +102,7 @@ class Tag(object):
       descriptionEndTag = "<br /><b>Moderators:"
       moderatorTags = moderatorText.split(", ")
       for moderator in moderatorTags:
-        tag['staff'].append({'name': str(albatross.getEnclosedString(moderator, r'">', r"</a>")), 'id': int(albatross.getEnclosedString(moderator, r"\?user=", r'">')), 'role':'moderator'})
+        tag['staff'].append({'name': albatross.getEnclosedString(moderator, r'">', r"</a>"), 'id': int(albatross.getEnclosedString(moderator, r"\?user=", r'">')), 'role':'moderator'})
     else:
       descriptionEndTag = "<br /><b>Administrators:"
 
@@ -97,7 +110,7 @@ class Tag(object):
     if administratorText:
       administratorTags = administratorText.split(", ")
       for administrator in administratorTags:
-        tag['staff'].append({'name': str(albatross.getEnclosedString(administrator, r'">', r"</a>")), 'id': int(albatross.getEnclosedString(administrator, r"\?user=", r'">')), 'role':'administrator'})
+        tag['staff'].append({'name': albatross.getEnclosedString(administrator, r'">', r"</a>"), 'id': int(albatross.getEnclosedString(administrator, r"\?user=", r'">')), 'role':'administrator'})
     descriptionText = albatross.getEnclosedString(tagJSON[1][0], r":</b> ", descriptionEndTag)
     if descriptionText:
       tag['description'] = parser.unescape(descriptionText)
@@ -119,7 +132,7 @@ class Tag(object):
     """
     Fetches tag info.
     """
-    tagInfoParams = urllib.urlencode([('e', ''), ('q', str(self.name)), ('n', '1')])
+    tagInfoParams = urllib.urlencode([('e', ''), ('q', unicode(self.name).encode('utf-8')), ('n', '1')])
     tagURL = "https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams
     tagPage = self.connection.page(tagURL)
     # check to see if this page is valid.
@@ -128,7 +141,7 @@ class Tag(object):
       try:
         self.set(self.parse(tagPage.html))
       except MalformedTagError, e:
-        e.message = "URL: " + str(tagURL)
+        e.message = "URL: " + unicode(tagURL)
         raise e
     else:
       raise connection.UnauthorizedError(self.connection)

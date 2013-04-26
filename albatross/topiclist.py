@@ -93,7 +93,7 @@ class TopicList(object):
       lastPostTime = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(thisTopic.group('lastPostTime'), "%m/%d/%Y %H:%M"))
     else:
       lastPostTime = False
-    return dict([('id', int(thisTopic.group('topicID'))), ('title', thisTopic.group('title')), ('user', {'id': user['userID'], 'name': user['username']}), ('postCount', int(thisTopic.group('postCount'))), ('newPosts', newPosts), ('lastPostTime', lastPostTime), ('closed', closedTopic), ('tags', tags)])
+    return dict([('id', int(thisTopic.group('topicID'))), ('title', parser.unescape(thisTopic.group('title'))), ('user', {'id': user['userID'], 'name': user['username']}), ('postCount', int(thisTopic.group('postCount'))), ('newPosts', newPosts), ('lastPostTime', lastPostTime), ('closed', closedTopic), ('tags', tags)])
 
   def search(self, query="", allowedTags=None, forbiddenTags=None, maxTime=None, maxID=None, activeSince=None, topics=None, recurse=False):
     """
@@ -119,7 +119,7 @@ class TopicList(object):
       # assemble the search query and request this search page's topic listing.
       if isinstance(maxTime, datetime.datetime):
         maxTime = calendar.timegm(maxTime.utctimetuple())
-      searchQuery = urllib.urlencode([('q', str(query)), ('ts', str(maxTime)), ('t', str(maxID))])
+      searchQuery = urllib.urlencode([('q', unicode(query).encode('utf-8')), ('ts', unicode(maxTime).encode('utf-8')), ('t', unicode(maxID).encode('utf-8'))])
       topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString(allowed=allowedTags, forbidden=forbiddenTags) + '?' + searchQuery).html
       
       # split the topic listing string into a list so that one topic is in each element.

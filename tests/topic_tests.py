@@ -52,7 +52,7 @@ class testTopicClass(object):
     assert self.starcraftTopic.id == 6951014
     
   def testgetTopicTitle(self):
-    assert isinstance(self.starcraftTopic.title, str) and self.starcraftTopic.title
+    assert isinstance(self.starcraftTopic.title, unicode) and self.starcraftTopic.title
 
   def testgetTopicDate(self):
     assert self.starcraftTopic.date and isinstance(self.starcraftTopic.date, datetime.datetime) and self.starcraftTopic.date == datetime.datetime.fromtimestamp(1296773983, tz=self.centralTimezone)

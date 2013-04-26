@@ -50,17 +50,30 @@ This behavior is disabled by default if you specify a cookieString but no cookie
 
 You can fetch topic posts like so:
     
-    oneTopic = albatross.Topic(etiConn, 7823107)
+    oneTopic = etiConn.topic(7823107)
     # alternatively:
+    oneTopic = albatross.Topic(etiConn, 7823107)
+    # or even:
     oneTopic = etiConn.topics.search(query="Ritsu's", allowedTags=["Anime"])[0]
     print oneTopic.posts()[0]
 
 And from there, post info like so:
-    
-    onePost = albatross.Post(etiConn, 104123023, oneTopic)
+
+    onePost = etiConn.post(104123023, oneTopic)
     # alternatively:
+    onePost = albatross.Post(etiConn, 104123023, oneTopic)
+    # or even:
     onePost = oneTopic.posts()[0]
     print onePost
+
+Finally, Albatross can also pull information about tags from ETI. For instance, you could do any of the following:
+    
+    activeTags = etiConn.tags(active=True)
+    someTags = etiConn.tags(tags=["LUE", "Anonymous", "Anime"])
+    animeTag = etiConn.tag("Anime")
+    print animeTag
+
+For more info on available arguments and methods, please consult the help() documentation in your python console.
 
 Tests
 -----

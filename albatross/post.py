@@ -24,7 +24,7 @@ class InvalidPostError(topic.InvalidTopicError):
   def __str__(self):
     return "\n".join([
       super(InvalidPostError, self).__str__(),
-      "PostID: " + str(self.post.id),
+      "PostID: " + unicode(self.post.id),
       ])
 class MalformedPostError(InvalidPostError):
   def __init__(self, post, topic, text):
@@ -33,7 +33,7 @@ class MalformedPostError(InvalidPostError):
   def __str__(self):
     return "\n".join([
         super(MalformedTagError, self).__str__(),
-        "Text: " + str(self.text)
+        "Text: " + unicode(self.text)
       ])
 
 class Post(object):
@@ -53,8 +53,8 @@ class Post(object):
     if self._date is None:
       self.load()
     return "\n".join([
-      "ID: " + str(self.id),
-      "User: " + unicode(self.user['name']) + " (" + str(self.user['id']) + ")",
+      "ID: " + unicode(self.id),
+      "User: " + unicode(self.user['name']) + " (" + unicode(self.user['id']) + ")",
       "Date: " + self.date.strftime("%m/%d/%Y %I:%M:%S %p"),
       "Post:",
       unicode(self.html),
@@ -82,7 +82,7 @@ class Post(object):
     if not timeString:
       timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r'</div>')
     postDict = {'id': int(albatross.getEnclosedString(text, r'<div class="message-container" id="m', r'">')),
-    'user': {'name': parser.unescape(True and albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or 'Human'), 
+    'user': {'name': parser.unescape(True and albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or u'Human'), 
             'id': int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))},
     'date': pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(timeString, "%m/%d/%Y %I:%M:%S %p")),
     'html': albatross.getEnclosedString(text, r' class="message">', r'---<br />', multiLine=True, greedy=True),
@@ -91,12 +91,12 @@ class Post(object):
     if postDict['html'] is False:
       # sigless and on message detail page.
       postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'</td>', multiLine=True, greedy=False)
-      postDict['sig'] = ""
+      postDict['sig'] = u""
     if postDict['html'] is False:
       # sigless and on topic listing.
       postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'', multiLine=True, greedy=True)
     if postDict['html'] is False:
-      raise MalformedPostError(self, self.topic, str(text))
+      raise MalformedPostError(self, self.topic, unicode(text))
     postDict['html'] = postDict['html'].rstrip("\n")
     if postDict['sig'] is not False:
       postDict['sig'] = postDict['sig'].rstrip("\n")
@@ -106,7 +106,7 @@ class Post(object):
     """
     Fetches post info.
     """
-    postPage = self.connection.page('https://boards.endoftheinter.net/message.php?id=' + str(self.id) + '&topic=' + str(self.topic.id))
+    postPage = self.connection.page('https://boards.endoftheinter.net/message.php?id=' + unicode(self.id) + '&topic=' + unicode(self.topic.id))
     # check to see if this page is valid.
     if re.search(r'<em>Invalid topic.</em>', postPage.html) or re.search(r'<em>Can\'t find that post...</em>', postPage.html):
       raise InvalidPostError(self)

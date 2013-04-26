@@ -25,7 +25,7 @@ class testPostClass(object):
     self.anonymousPost = self.etiConn.post(124662128, self.anonymousTopic)
 
   def testgetPostHTML(self):
-    assert isinstance(self.validPost.html, str) or isinstance(self.validPost.html, unicode) and len(self.validPost.html) > 0
+    assert isinstance(self.validPost.html, unicode) and len(self.validPost.html) > 0
     assert self.starcraftPost.html == 'and does that figure in to who you get matched up against on ladder<br />'
     assert self.archivedPost.html == 'I think Moltar and I are the only ones. <br />'
     assert self.anonymousPost.html == "two bra and panty sets, a casual dress, a six pack of panties, and six assorted patterned pantyhose.<br />\n<br />\ni'm really glad i have the opportunity to try this now."
@@ -42,7 +42,7 @@ class testPostClass(object):
     assert self.anonymousPost.id == 124662128
 
   def testgetPostUsername(self):
-    assert isinstance(self.validPost.user['name'], str) or isinstance(self.validPost.user['name'], unicode) and len(self.validPost.user['name']) > 0
+    assert isinstance(self.validPost.user['name'], unicode) and len(self.validPost.user['name']) > 0
     assert self.starcraftPost.user['name'] == 'tsutter810'
     assert self.archivedPost.user['name'] == 'Kiffe'
     assert self.anonymousPost.user['name'] == 'Human'

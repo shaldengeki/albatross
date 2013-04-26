@@ -5,31 +5,31 @@ import pytz
 
 class testTopicListClass(object):
   @classmethod
-  def setUpClass(klass):
+  def setUpClass(self):
     # reads ETI login credentials from credentials.txt and cookieString.txt in the current directory.
     credentials = open('credentials.txt', 'r').readlines()[0].strip().split(',')
     
-    klass.username = credentials[0]
-    klass.password = credentials[1].rstrip()
-    klass.etiConn = albatross.Connection(username=klass.username, password=klass.password, loginSite=albatross.SITE_MOBILE)
+    self.username = credentials[0]
+    self.password = credentials[1].rstrip()
+    self.etiConn = albatross.Connection(username=self.username, password=self.password, loginSite=albatross.SITE_MOBILE)
 
     # topic page and content HTML for topic tests.
-    klass.currentTopicListPage = klass.etiConn.page('https://boards.endoftheinter.net/topics/').html
+    self.currentTopicListPage = self.etiConn.page('https://boards.endoftheinter.net/topics/').html
 
-    klass.emptyTopicSearchList = klass.etiConn.page('https://boards.endoftheinter.net/topics/?q=abiejgapsodijf').html
-    klass.cyberlightTopicDict = klass.etiConn.topics.parse(klass.etiConn.page('https://boards.endoftheinter.net/topics/?q=insanity+enjoy').html)
-    klass.anonymousTopicDict = klass.etiConn.topics.parse(klass.etiConn.page('https://boards.endoftheinter.net/topics/Anonymous').html)
+    self.emptyTopicSearchList = self.etiConn.page('https://boards.endoftheinter.net/topics/?q=abiejgapsodijf').html
+    self.cyberlightTopicDict = self.etiConn.topics.parse(self.etiConn.page('https://boards.endoftheinter.net/topics/?q=insanity+enjoy').html)
+    self.anonymousTopicDict = self.etiConn.topics.parse(self.etiConn.page('https://boards.endoftheinter.net/topics/Anonymous').html)
 
-    klass.nwsTopicSearch = klass.etiConn.topics.search(query="NWS")
-    klass.anonymousTopicSearch = klass.etiConn.topics.search(query="", allowedTags=["Anonymous"])
-    klass.multiTagTopicSearch = klass.etiConn.topics.search(query="the", allowedTags=["LUE", "Anonymous"], forbiddenTags=["Sports", "Gaming"])
-    klass.archivesTopicSearch = klass.etiConn.topics.search(query="Archived")
-    klass.emptyTopicSearch = klass.etiConn.topics.search(query="abiejgapsodijf")
-    klass.contradictoryTopicSearch = klass.etiConn.topics.search(allowedTags=["LUE"], forbiddenTags=["LUE"])
+    self.nwsTopicSearch = self.etiConn.topics.search(query="NWS")
+    self.anonymousTopicSearch = self.etiConn.topics.search(query="", allowedTags=["Anonymous"])
+    self.multiTagTopicSearch = self.etiConn.topics.search(query="the", allowedTags=["LUE", "Anonymous"], forbiddenTags=["Sports", "Gaming"])
+    self.archivesTopicSearch = self.etiConn.topics.search(query="Archived")
+    self.emptyTopicSearch = self.etiConn.topics.search(query="abiejgapsodijf")
+    self.contradictoryTopicSearch = self.etiConn.topics.search(allowedTags=["LUE"], forbiddenTags=["LUE"])
 
-    klass.emptyTopicList = klass.etiConn.topics.search(maxTime=pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1)), maxID=1)
-    klass.currentTopicList = klass.etiConn.topics.search()
-    klass.anonymousTopicList = klass.etiConn.topics.search(allowedTags=["Anonymous"])
+    self.emptyTopicList = self.etiConn.topics.search(maxTime=pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1)), maxID=1)
+    self.currentTopicList = self.etiConn.topics.search()
+    self.anonymousTopicList = self.etiConn.topics.search(allowedTags=["Anonymous"])
 
   def testgetTopicList(self):
     assert isinstance(self.emptyTopicList, albatross.TopicList) and len(self.emptyTopicList) == 0

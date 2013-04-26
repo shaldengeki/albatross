@@ -26,15 +26,15 @@ class InvalidTopicError(albatross.Error):
   def __str__(self):
     return "\n".join([
         super(InvalidTopicError, self).__str__(),
-      "TopicID: " + str(self.topic.id),
-      "Page: " + str(self.topic.page)
+      "TopicID: " + unicode(self.topic.id),
+      "Page: " + unicode(self.topic.page)
       ])
 
 class ArchivedTopicError(InvalidTopicError):
   def __str__(self):
     return "\n".join([
         super(ArchivedTopicError, self).__str__(),
-      "Archived: " + str(self._archived)
+      "Archived: " + unicode(self._archived)
       ])
 
 import post
@@ -66,11 +66,11 @@ class Topic(object):
     if self._date is None:
       self.load()
     return "\n".join([
-      "ID: " + str(self.id) + " (Archived: " + str(self.archived) + ")",
-      "Title: " + str(self.title),
+      "ID: " + unicode(self.id) + " (Archived: " + unicode(self.archived) + ")",
+      "Title: " + unicode(self.title),
       "Tags: " + ", ".join(self.tags._tagNames),
-      "Page: " + str(self.page) + "/" + str(self.pages),
-      "Posts:" + str(self.postCount),
+      "Page: " + unicode(self.page) + "/" + unicode(self.pages),
+      "Posts:" + unicode(self.postCount),
       "Date: " + self.date.strftime("%m/%d/%Y %I:%M:%S %p")
       ])
 
@@ -95,14 +95,14 @@ class Topic(object):
       subdomain="archives"
     else:
       subdomain="boards"
-    topicPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(self.id))
+    topicPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + unicode(self.id))
     # check to see if this page is valid.
     if re.search(r'<h2><em>This topic has been archived\. No additional messages may be posted\.</em></h2>', topicPage.html) or re.search(r'HTTP\/1\.1 302 Moved Temporarily', topicPage.header):
       # topic is archived.
       if self._archived is None:
         self._archived = True
         subdomain = "archives"
-        topicPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(self.id))
+        topicPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + unicode(self.id))
       elif self._archived is False:
         raise ArchivedTopicError(self)
     elif self._archived is None:
@@ -116,7 +116,7 @@ class Topic(object):
       self._title = parser.unescape(albatross.getEnclosedString(topicPage.html, r'\<h1\>', r'\<\/h1\>'))
       self._date = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(albatross.getEnclosedString(topicPage.html, r'<b>Posted:</b> ', r' \| '), "%m/%d/%Y %I:%M:%S %p"))
       userID = int(albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))
-      username = parser.unescape(True and albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=' + str(userID) + r'">', r'</a>') or 'Human')
+      username = parser.unescape(True and albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=' + unicode(userID) + r'">', r'</a>') or 'Human')
       self._user = {'id': userID, 'name': username}
       self._pages = int(albatross.getEnclosedString(topicPage.html, r'">(First Page</a> \| )?(<a href)?(\S+)?(Previous Page</a> \| )?Page \d+ of <span>', r'</span>'))
       self._closed = self._archived
@@ -129,7 +129,7 @@ class Topic(object):
           tagName = tagName[1:-1]
         cleanedTagNames.append(parser.unescape(tagName.replace("_", " ")))
       self._tags = taglist.TagList(self.connection, tags=cleanedTagNames)
-      lastPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + str(self.id) + '&page=' + str(self._pages))
+      lastPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + unicode(self.id) + '&page=' + unicode(self._pages))
       if lastPage.authed:
         lastPagePosts = self.getPagePosts(lastPage.html)
         lastPost = post.Post(self.connection, 0, self)
@@ -230,12 +230,14 @@ class Topic(object):
       topicSubdomain = "archives"
     else:
       topicSubdomain = "boards"
-    
+
     # since we've already fetched the first page's posts (from load), increment start page by one.
     # self.page += 1
 
     if endPageNum is None:
       endPageNum = self.pages
+    if userID is None:
+      userID = ""
 
     self._posts = []
     # now loop over all the other pages (if there are any)

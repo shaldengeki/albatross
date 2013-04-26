@@ -22,7 +22,7 @@ class testTagClass(object):
     assert isinstance(self.threeTags, albatross.TagList) and len(self.threeTags) == 3 and self.threeTags[0].name != ''
 
   def testgetTagStaff(self):
-    assert isinstance(self.lueTag.staff, list) and len(self.lueTag.staff) > 0 and isinstance(self.lueTag.staff[0], dict) and isinstance(self.lueTag.staff[0]['id'], int) and (isinstance(self.lueTag.staff[0]['name'], str) or isinstance(self.lueTag.staff[0]['name'], unicode)) and self.lueTag.staff[0]['role'] in ('administrator', 'moderator')
+    assert isinstance(self.lueTag.staff, list) and len(self.lueTag.staff) > 0 and isinstance(self.lueTag.staff[0], dict) and isinstance(self.lueTag.staff[0]['id'], int) and isinstance(self.lueTag.staff[0]['name'], unicode) and self.lueTag.staff[0]['role'] in ('administrator', 'moderator')
 
   def testtagRelatedTags(self):
     assert len(self.tvTag.related) > 0 and isinstance(self.tvTag.related[0], albatross.Tag) and self.tvTag.related[0].name

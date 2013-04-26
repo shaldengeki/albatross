@@ -21,8 +21,8 @@ class PageLoadError(albatross.Error):
   def __str__(self):
     return "\n".join([
         super(PageLoadError, self).__str__(),
-        "URL: " + str(self.page.url),
-        "needsAuth: " + str(self.page.needsAuth)
+        "URL: " + unicode(self.page.url),
+        "needsAuth: " + unicode(self.page.needsAuth)
       ])
 
 class Page(object):
@@ -57,14 +57,14 @@ class Page(object):
       pageRequest.setopt(pycurl.NOBODY, True)
       pageRequest.setopt(pycurl.SSL_VERIFYPEER, False)
       pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
-      pageRequest.setopt(pycurl.URL, self.url)
+      pageRequest.setopt(pycurl.URL, self.url.encode('utf-8'))
       pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
       pageRequest.setopt(pycurl.COOKIE, str(self.connection.cookieString))
       pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
       try:
         pageRequest.perform()
         pageRequest.close()
-        header = header.getvalue()
+        header = header.getvalue().decode('utf-8')
       except:
         continue
     return header
@@ -83,17 +83,17 @@ class Page(object):
       
       pageRequest.setopt(pycurl.SSL_VERIFYPEER, False)
       pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
-      pageRequest.setopt(pycurl.URL, self.url)
+      pageRequest.setopt(pycurl.URL, self.url.encode('utf-8'))
       pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
       pageRequest.setopt(pycurl.COOKIE, str(self.connection.cookieString))
       pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
       pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
       try:
         pageRequest.perform()
-        requestCode = pageRequest.getinfo(pageRequest.HTTP_CODE)
+        requestCode = int(pageRequest.getinfo(pageRequest.HTTP_CODE))
         pageRequest.close()
-        response = response.getvalue()
-        header = header.getvalue()
+        response = response.getvalue().decode('utf-8')
+        header = header.getvalue().decode('utf-8')
       except:
         continue
       # check to see if ETI is acting up.

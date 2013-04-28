@@ -7,14 +7,11 @@
 
     UserList - User list information retrieval and manipulation.
 '''
-import calendar
 import datetime
 import HTMLParser
 import pytz
 import re
-import sys
 import urllib
-import urllib2
 
 import albatross
 import page
@@ -94,7 +91,7 @@ class UserList(object):
     thisPage._html = text
     if not thisPage.authed:
       if self.connection.reauthenticate():
-        self.connection.parallelCurl.startrequest(url, self.appendPosts, paramArray)
+        self.connection.parallelCurl.startrequest(url, self.appendUsers, paramArray)
         return
 
     maxID = paramArray['maxID']

@@ -12,13 +12,10 @@ import datetime
 import HTMLParser
 import pytz
 import re
-import urllib
-import urllib2
 import xml.sax.saxutils
 
 import albatross
 import connection
-import page
 
 class InvalidUserError(albatross.Error):
   def __init__(self, user):

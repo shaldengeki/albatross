@@ -6,3 +6,5 @@ from topiclist import *
 from post import *
 from tag import *
 from taglist import *
+from user import *
+from userlist import *

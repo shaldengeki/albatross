@@ -47,17 +47,8 @@ class Topic(object):
     self.page = page
     if not isinstance(id, int) or int(id) < 1:
       raise InvalidTopicError(self)
-    self._closed = None
-    self._archived = None
-    self._date = None
-    self._title = None
-    self._user = None
-    self._pages = None
-    self._posts = None
+    self._closed = self._archived = self._date = self._title = self._user = self._pages = self._posts = self._postCount = self._tags = self._lastPostTime = None
     self._postIDs = {}
-    self._postCount = None
-    self._tags = None
-    self._lastPostTime = None
 
   def __str__(self):
     if self._date is None:
@@ -79,6 +70,12 @@ class Topic(object):
 
   def __index__(self):
     return self.id
+
+  def __hash__(self):
+    return self.id
+
+  def __eq__(self, topic):
+    return self.id == topic.id
 
   def set(self, attrDict):
     """
@@ -123,7 +120,7 @@ class Topic(object):
       self._date = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(albatross.getEnclosedString(topicPage.html, r'<b>Posted:</b> ', r' \| '), "%m/%d/%Y %I:%M:%S %p"))
       userID = int(albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))
       username = parser.unescape(True and albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=' + unicode(userID) + r'">', r'</a>') or 'Human')
-      self._user = {'id': userID, 'name': username}
+      self._user = self.connection.user(userID).set({'name': username})
       self._pages = int(albatross.getEnclosedString(topicPage.html, r'">(First Page</a> \| )?(<a href)?(\S+)?(Previous Page</a> \| )?Page \d+ of <span>', r'</span>'))
       self._closed = self._archived
       tagNames = [urllib2.unquote(albatross.getEnclosedString(tagEntry, '<a href="/topics/', r'">')) for tagEntry in albatross.getEnclosedString(topicPage.html, r"<h2><div", r"</div></h2>").split(r"</a>")[:-1] if not tagEntry.startswith(' <span')]
@@ -208,7 +205,7 @@ class Topic(object):
     Takes the HTML of a topic message listing as fed in by pyparallelcurl and appends the posts contained within to the current topic's posts.
     """
     if not text:
-      thisPage = page.Page(url)
+      thisPage = self.connection.page(url)
       raise page.PageLoadError(thisPage)
     
     thisPage = page.Page(self.connection, url)
@@ -224,10 +221,10 @@ class Topic(object):
       newPost = self.connection.post(1, self)
       newPost.set(newPost.parse(postRow))
       if newPost not in self:
-        self._postIDs[newPost.id] = 1
+        self._postIDs[newPost] = 1
         self._posts.append(newPost)
 
-  def getPosts(self, endPageNum=None, userID=None):
+  def getPosts(self, endPageNum=None, user=None):
     """
     Return a list of post objects in this topic, starting from the current topic page.
     Performs operation in parallel.
@@ -242,8 +239,8 @@ class Topic(object):
 
     if endPageNum is None:
       endPageNum = self.pages
-    if userID is None:
-      userID = ""
+      
+    userID = "" if user is None else user.id
 
     self._posts = []
     # now loop over all the other pages (if there are any)

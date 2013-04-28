@@ -42,16 +42,16 @@ class testPostClass(object):
     assert self.anonymousPost.id == 124662128
 
   def testgetPostUsername(self):
-    assert isinstance(self.validPost.user['name'], unicode) and len(self.validPost.user['name']) > 0
-    assert self.starcraftPost.user['name'] == 'tsutter810'
-    assert self.archivedPost.user['name'] == 'Kiffe'
-    assert self.anonymousPost.user['name'] == 'Human'
+    assert isinstance(self.validPost.user.name, unicode) and len(self.validPost.user.name) > 0
+    assert self.starcraftPost.user.name == 'tsutter810'
+    assert self.archivedPost.user.name == 'Kiffe'
+    assert self.anonymousPost.user.name == 'Human'
 
   def testgetPostUserID(self):
-    assert isinstance(self.validPost.user['id'], int) and self.validPost.user['id'] > 0
-    assert self.starcraftPost.user['id'] == 4662
-    assert self.archivedPost.user['id'] == 11689
-    assert self.anonymousPost.user['id'] == 0
+    assert isinstance(self.validPost.user.id, int) and self.validPost.user.id > 0
+    assert self.starcraftPost.user.id == 4662
+    assert self.archivedPost.user.id == 11689
+    assert self.anonymousPost.user.id == 0
 
   def testgetPostDate(self):
     assert isinstance(self.validPost.date, datetime.datetime) and self.validPost.date > datetime.datetime.fromtimestamp(0, tz=self.centralTimezone)

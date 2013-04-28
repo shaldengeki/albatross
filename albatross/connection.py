@@ -21,6 +21,8 @@ from topiclist import TopicList
 from tag import Tag
 from taglist import TagList
 from post import Post
+from user import User
+from userlist import UserList
 
 class UnauthorizedError(albatross.Error):
   def __init__(self, cxn):
@@ -137,6 +139,9 @@ class Connection(object):
         cookieString = open(self.cookieFile, 'r').readline().strip('\n')
       if cookieString and cookieString != self.cookieString:
         self.cookieString = cookieString
+        if self.username and self.password and self.cookieFile and os.path.exists(self.cookieFile):
+          with open(self.cookieFile, 'w') as f:
+            f.write(self.cookieString)
         self.setParallelCurlObject()
         return True
     return False
@@ -196,3 +201,9 @@ class Connection(object):
 
   def post(self, id, topic):
     return Post(self, id, topic)
+
+  def user(self, id):
+    return User(self, id)
+
+  def users(self):
+    return UserList(self)

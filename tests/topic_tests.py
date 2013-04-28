@@ -35,10 +35,6 @@ class testTopicClass(object):
     self.etiConn.topic(-1)
 
   @raises(albatross.InvalidTopicError)
-  def testBoolInvalidTopic(self):
-    self.etiConn.topic(False)
-
-  @raises(albatross.InvalidTopicError)
   def testFloatInvalidTopic(self):
     self.etiConn.topic(1.5)
 
@@ -81,5 +77,5 @@ class testTopicClass(object):
     assert isinstance(self.starcraftTopic.tags, albatross.TagList) and len(self.starcraftTopic.tags) == 3 and self.archivedTag in self.starcraftTopic.tags and self.starcraftTag in self.starcraftTopic.tags and self.lueTag in self.starcraftTopic.tags
 
   def testgetTopicUser(self):
-    assert self.anonymousTopic.user['id'] == 0 and self.anonymousTopic.user['name'] == 'Human'
-    assert self.starcraftTopic.user['id'] == 4662 and self.starcraftTopic.user['name'] == 'tsutter810'
+    assert self.anonymousTopic.user.id == 0 and self.anonymousTopic.user.name == 'Human'
+    assert self.starcraftTopic.user.id == 4662 and self.starcraftTopic.user.name == 'tsutter810'

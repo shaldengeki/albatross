@@ -54,7 +54,7 @@ You can fetch topic posts like so:
     # alternatively:
     oneTopic = albatross.Topic(etiConn, 7823107)
     # or even:
-    oneTopic = etiConn.topics(allowedTags=["Anime"]).search(query="Ritsu's")[0]
+    oneTopic = etiConn.topics(allowedTags=["Anime"]).search(query="Ritsu's", recurse=True)[0]
     print oneTopic.posts()[0]
 
 And from there, post info like so:
@@ -65,6 +65,15 @@ And from there, post info like so:
     # or even:
     onePost = oneTopic.posts()[0]
     print onePost
+
+You can also fetch user info:
+    
+    oneUser = etiConn.user(1)
+    # alternatively:
+    oneUser = albatross.User(etiConn, 1)
+    # or maybe:
+    someUsers = etiConn.users.search("guy", recurse=True)
+    print oneUser
 
 Finally, Albatross can also pull information about tags from ETI. For instance, you could do any of the following:
     

@@ -43,7 +43,7 @@ class Tag(object):
   '''
   def __init__(self, conn, name):
     self.connection = conn
-    self.name = name
+    self.name = unicode(name)
     self._staff = None
     self._description = None
     self._related = None
@@ -64,7 +64,13 @@ class Tag(object):
       ])
 
   def __index__(self):
-    return self.name
+    return hash(self.name)
+
+  def __hash__(self):
+    return hash(self.name)
+
+  def __eq__(self, tag):
+    return self.name == tag.name
 
   def set(self, attrDict):
     """
@@ -105,7 +111,8 @@ class Tag(object):
       descriptionEndTag = "<br /><b>Moderators:"
       moderatorTags = moderatorText.split(", ")
       for moderator in moderatorTags:
-        tag['staff'].append({'name': albatross.getEnclosedString(moderator, r'">', r"</a>"), 'id': int(albatross.getEnclosedString(moderator, r"\?user=", r'">')), 'role':'moderator'})
+        user = self.connection.user(int(albatross.getEnclosedString(moderator, r"\?user=", r'">'))).set({'name': albatross.getEnclosedString(moderator, r'">', r"</a>")})
+        tag['staff'].append({'user': user, 'role':'moderator'})
     else:
       descriptionEndTag = "<br /><b>Administrators:"
 
@@ -113,7 +120,8 @@ class Tag(object):
     if administratorText:
       administratorTags = administratorText.split(", ")
       for administrator in administratorTags:
-        tag['staff'].append({'name': albatross.getEnclosedString(administrator, r'">', r"</a>"), 'id': int(albatross.getEnclosedString(administrator, r"\?user=", r'">')), 'role':'administrator'})
+        user = self.connection.user(int(albatross.getEnclosedString(administrator, r"\?user=", r'">'))).set({'name': albatross.getEnclosedString(administrator, r'">', r"</a>")})
+        tag['staff'].append({'user': user, 'role':'administrator'})
     descriptionText = albatross.getEnclosedString(tagJSON[1][0], r":</b> ", descriptionEndTag)
     if descriptionText:
       tag['description'] = parser.unescape(descriptionText)

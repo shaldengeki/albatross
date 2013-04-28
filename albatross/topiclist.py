@@ -72,12 +72,10 @@ class TopicList(object):
     if not thisTopic:
       raise TopicListError(self)
     parser = HTMLParser.HTMLParser()
-    user = {'userID': 0, 'username': 'Human', 'moneybags': False}
     if thisTopic.group('userID') and thisTopic.group('username'):
-      user['userID'] = int(thisTopic.group('userID'))
-      user['username'] = thisTopic.group('username')
-    if thisTopic.group('moneybags') and thisTopic.group('moneybags2'):
-      user['moneybags'] = True
+      user = self.connection.user(int(thisTopic.group('userID'))).set({'name': parser.unescape(thisTopic.group('username'))})
+    else:
+      user = self.connection.user(0).set({'name': 'Human'})
     newPosts = 0
     if thisTopic.group('newPostCount'):
       newPosts = int(thisTopic.group('newPostCount'))
@@ -95,7 +93,7 @@ class TopicList(object):
       lastPostTime = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(thisTopic.group('lastPostTime'), "%m/%d/%Y %H:%M"))
     else:
       lastPostTime = False
-    return dict([('id', int(thisTopic.group('topicID'))), ('title', parser.unescape(thisTopic.group('title'))), ('user', {'id': user['userID'], 'name': user['username']}), ('postCount', int(thisTopic.group('postCount'))), ('newPosts', newPosts), ('lastPostTime', lastPostTime), ('closed', closedTopic), ('tags', tags)])
+    return dict([('id', int(thisTopic.group('topicID'))), ('title', parser.unescape(thisTopic.group('title'))), ('user', user), ('postCount', int(thisTopic.group('postCount'))), ('newPosts', newPosts), ('lastPostTime', lastPostTime), ('closed', closedTopic), ('tags', tags)])
 
   def search(self, query="", maxTime=None, maxID=None, activeSince=None, topics=None, recurse=False):
     """

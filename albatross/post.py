@@ -32,7 +32,7 @@ class MalformedPostError(InvalidPostError):
     self.text = text
   def __str__(self):
     return "\n".join([
-        super(MalformedTagError, self).__str__(),
+        super(MalformedPostError, self).__str__(),
         "Text: " + unicode(self.text)
       ])
 
@@ -68,6 +68,12 @@ class Post(object):
   def __index__(self):
     return self.id
 
+  def __hash__(self):
+    return self.id
+
+  def __eq__(self, post):
+    return self.id == post.id
+
   def set(self, attrDict):
     """
     Sets attributes of this post object with keys found in dict.
@@ -87,9 +93,9 @@ class Post(object):
     timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r' \| ')
     if not timeString:
       timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r'</div>')
+    user = self.connection.user(int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))).set({'name': parser.unescape(True and albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or u'Human')})
     postDict = {'id': int(albatross.getEnclosedString(text, r'<div class="message-container" id="m', r'">')),
-    'user': {'name': parser.unescape(True and albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or u'Human'), 
-            'id': int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))},
+    'user': user,
     'date': pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(timeString, "%m/%d/%Y %I:%M:%S %p")),
     'html': albatross.getEnclosedString(text, r' class="message">', r'---<br />', multiLine=True, greedy=True),
     'sig': albatross.getEnclosedString(text, r'---<br />\n', r'</td>', multiLine=True, greedy=False)

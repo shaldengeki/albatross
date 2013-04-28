@@ -128,8 +128,8 @@ class User(object):
       if not tokenText:
         tokenText = 0
       self._tokens = int(tokenText)
-      self._goodTokens = int(albatross.getEnclosedString(userPage.html, '<td>Good&nbsp;Tokens</td>\s+<td>', '</td>'))
-      self._badTokens = int(albatross.getEnclosedString(userPage.html, '<td>Bad Tokens</td>\s+<td>', '</td>'))
+      self._goodTokens = int(albatross.getEnclosedString(userPage.html, '<td>(<a href="tokenlist\.php\?user=' + str(self.id) + '&amp;type=2">)?Good&nbsp;Tokens(</a>)?</td>\s+<td>', '</td>'))
+      self._badTokens = int(albatross.getEnclosedString(userPage.html, '<td>(<a href="tokenlist\.php\?user=' + str(self.id) + '&amp;type=1">)?Bad Tokens(</a>)?</td>\s+<td>', '</td>'))
       self._created = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(userPage.html, '<td>Account Created</td>\s+<td>', '</td>'), "%m/%d/%Y"))
       self._active = bool(re.search('\(online now\)', albatross.getEnclosedString(userPage.html, '<td>Last Active</td>\s+<td>', '</td>')))
       self._lastActive = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(userPage.html, '<td>Last Active</td>\s+<td>', '( \(online now\))?</td>'), "%m/%d/%Y"))

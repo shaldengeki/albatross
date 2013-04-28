@@ -17,6 +17,7 @@ class testTopicClass(object):
 
     self.validTopic = self.etiConn.topics(allowedTags=["LUE"]).search()[0]
     self.archivedTopic = self.etiConn.topic(6240806)
+    self.falseArchivedTopic = self.etiConn.topic(6240806).set({'archived': False})
     self.multiPageTopic = self.etiConn.topic(6240806, page=2)
     self.lastPageTopic = self.etiConn.topic(6240806, page=3)
     self.starcraftTopic = self.etiConn.topic(6951014)
@@ -38,13 +39,30 @@ class testTopicClass(object):
   def testFloatInvalidTopic(self):
     self.etiConn.topic(1.5)
 
+  def testTopicLength(self):
+    assert len(self.archivedTopic) == 106
+    assert len(self.starcraftTopic) == 2
+    assert len(self.validTopic) > 0
+
   def testcheckTopicValid(self):
     assert isinstance(self.validTopic, albatross.Topic)
 
   def testcheckArchivedTopic(self):
     assert isinstance(self.archivedTopic.archived, bool) and self.archivedTopic.archived
     assert isinstance(self.validTopic.archived, bool) and not self.validTopic.archived
+
+  def testcheckClosedTopic(self):
+    assert isinstance(self.archivedTopic.closed, bool) and self.archivedTopic.closed
+    assert isinstance(self.validTopic.closed, bool) and not self.validTopic.closed
   
+  @raises(albatross.ArchivedTopicError)
+  def testCheckInvalidArchivedStatus(self):
+    self.falseArchivedTopic.load()
+
+  @raises(albatross.PageLoadError)
+  def testFetchMalformedTopic(self):
+    self.archivedTopic.appendPosts(None, None, None, None)
+
   def testgetTopicID(self):
     assert self.archivedTopic.id == 6240806
     assert self.multiPageTopic.id == 6240806
@@ -57,6 +75,9 @@ class testTopicClass(object):
   def testgetTopicDate(self):
     assert self.starcraftTopic.date and isinstance(self.starcraftTopic.date, datetime.datetime) and self.starcraftTopic.date == datetime.datetime.fromtimestamp(1296773983, tz=self.centralTimezone)
 
+  def testgetTopicLastPostTime(self):
+    assert self.starcraftTopic.lastPostTime and isinstance(self.starcraftTopic.lastPostTime, datetime.datetime) and self.starcraftTopic.lastPostTime == datetime.datetime.fromtimestamp(1296774689, tz=self.centralTimezone)
+
   def testgetTopicPageNum(self):
     assert self.starcraftTopic.page == 1
     assert self.multiPageTopic.page == 2
@@ -68,9 +89,14 @@ class testTopicClass(object):
     assert self.lastPageTopic.pages == 3
 
   def testgetTopicPosts(self):
-    assert isinstance(self.validTopic.posts(), list) and self.validTopic.posts()
-    assert isinstance(self.starcraftTopic.posts(), list) and self.starcraftTopic.posts() and len(self.starcraftTopic.posts()) == 2
-    assert isinstance(self.archivedTopic.posts(), list) and self.archivedTopic.posts() and len(self.archivedTopic.posts()) == 106
+    assert isinstance(self.validTopic.posts()[0], albatross.Post)
+    assert isinstance(self.starcraftTopic.posts()[0], albatross.Post)
+    assert isinstance(self.archivedTopic.posts()[0], albatross.Post)
+
+  def testgetPostCount(self):
+    assert isinstance(self.validTopic.postCount, int) and self.validTopic.postCount > 0
+    assert isinstance(self.starcraftTopic.postCount, int) and self.starcraftTopic.postCount == 2
+    assert isinstance(self.archivedTopic.postCount, int) and self.archivedTopic.postCount and self.archivedTopic.postCount == 106
 
   def testgetTopicTags(self):
     assert isinstance(self.validTopic.tags, albatross.TagList) and self.lueTag in self.validTopic.tags

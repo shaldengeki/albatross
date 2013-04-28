@@ -73,7 +73,10 @@ class TagList(object):
       self.connection.parallelCurl.startrequest(url.replace("e=&", ""), self.appendTag)
       return
 
-    if thisTag:
+    if thisTag and thisTag.name not in self._tagNames:
+      if self._tags is None:
+        self._tags = []
+      self._tagNames[thisTag.name] = 1
       self._tags.append(thisTag)
 
   def load(self):

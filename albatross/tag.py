@@ -93,7 +93,7 @@ class Tag(object):
       tagJSON = json.loads(text)
     except ValueError:
       print "Warning: invalid JSON object provided by ETI ajax tag interface."
-      raise MalformedTagError(self, unicode(tagJSON))
+      raise MalformedTagError(self, unicode(text))
     if len(tagJSON) < 1:
       raise MalformedTagError(self, unicode(tagJSON))
     tagJSON = tagJSON[0]

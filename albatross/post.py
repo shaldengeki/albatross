@@ -42,8 +42,12 @@ class Post(object):
   '''
   def __init__(self, conn, id, topic):
     self.connection = conn
-    self.id = int(id)
+    self.id = id
     self.topic = topic
+    if not isinstance(self.id, int) or int(self.id) < 1:
+      raise InvalidPostError(self)
+    else:
+      self.id = int(self.id)
     self._date = None
     self._user = None
     self._html = None
@@ -134,9 +138,6 @@ class Post(object):
     if self._date is None:
       self.load()
     return self._date
-  @date.setter
-  def date(self, stamp):
-    self._date = stamp
 
   @property
   def html(self):

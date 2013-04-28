@@ -34,6 +34,10 @@ class testTagClass(object):
   def testgetInvalidTagInfo(self):
     self.invalidTag.description
 
+  @raises(albatross.MalformedTagError)
+  def testParseInvalidJSON(self):
+    self.lueTag.parse("THIS IS INVALID JSON")
+
   def testgetTagTopics(self):
     assert isinstance(self.tvTag.topics().search(), albatross.TopicList) and len(self.tvTag.topics().search()) > 0 and all([self.tvTag in topic.tags for topic in self.tvTag.topics().search()])
     assert isinstance(self.threeTags.topics().search(), albatross.TopicList) and len(self.threeTags.topics().search()) > 0 and all([self.tvTag in topic.tags or self.lueTag in topic.tags or self.gleeTag in topic.tags for topic in self.threeTags.topics().search()])

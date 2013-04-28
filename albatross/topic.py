@@ -34,7 +34,7 @@ class ArchivedTopicError(InvalidTopicError):
   def __str__(self):
     return "\n".join([
         super(ArchivedTopicError, self).__str__(),
-      "Archived: " + unicode(self._archived)
+      "Archived: " + unicode(self.topic._archived)
       ])
 
 class Topic(object):
@@ -214,6 +214,8 @@ class Topic(object):
       if self.connection.reauthenticate():
         self.connection.parallelCurl.startrequest(url, self.appendPosts, paramArray)
         return
+      else:
+        raise connection.UnauthorizedError(self.connection)
       
     # parse this page and append posts to post list.
     thisPagePosts = self.getPagePosts(text)

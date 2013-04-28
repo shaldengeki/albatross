@@ -131,20 +131,20 @@ class Connection(object):
     Reauthenticates and resets authentication attributes if need be and reauth attribute is True.
     """
     if self.reauth:
+      cookieString = None
       if self.loggedIn():
         return True
       if self.username and self.password:
         cookieString = self.login()
       elif os.path.exists(self.cookieFile):
         cookieString = open(self.cookieFile, 'r').readline().strip('\n')
-      if cookieString and cookieString != self.cookieString:
+      if cookieString:
         self.cookieString = cookieString
         if self.username and self.password and self.cookieFile and os.path.exists(self.cookieFile):
           with open(self.cookieFile, 'w') as f:
             f.write(self.cookieString)
         self.setParallelCurlObject()
-        return True
-    return False
+    return self.loggedIn()
   
   def etiUp(self, retries=10):
     """

@@ -18,7 +18,7 @@ class Error(Exception):
     super(Error, self).__init__()
     self.message = message
   def __str__(self):
-    return unicode(self.message)
+    return unicode(self.message) if self.message is not None else u""
 
 def getEnclosedString(text, startString='', endString='', multiLine=False, greedy=False):
   """

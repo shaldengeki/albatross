@@ -113,7 +113,7 @@ class User(object):
       self._formerly = None
       nameChanged = albatross.getEnclosedString(userPage.html, "<td>Formerly</td>\s+<td>", "</td>")
       if nameChanged:
-        self._formerly = nameChanged
+        self._formerly = nameChanged.split(", ")
       self._reputation = {}
       reputationText = albatross.getEnclosedString(userPage.html, r'<td>Reputation</td><td style="line-height:1.6em">', r'</td>')
       if reputationText:

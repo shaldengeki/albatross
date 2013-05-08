@@ -60,7 +60,7 @@ class UserList(object):
     """
     Returns a dict of user attributes from a line of a user list, or throws an exception if it doesn't match a user listing regex.
     """
-    thisUser = re.search(r'\<a\ href\="//endoftheinter\.net/profile\.php\?user\=(?P<userID>[0-9]+)">(?P<username>.*?)</a></td><td>(?P<created>[0-9\/]*)</td><td>(?P<lastActive>[0-9\/]*)', text)
+    thisUser = re.search(r'\<a\ href\="//endoftheinter\.net/profile\.php\?user\=(?P<userID>[0-9]+)">(?P<username>.*?)</a>(?P<moneybags>\ \<span\ style\=\"color\:green\;font\-weight\:bold\"\>\$ \$\<\/span\>)?</td><td>(?P<created>[0-9\/]*)</td><td>(?P<lastActive>[0-9\/]*)', text)
     if not thisUser:
       raise UserListError(self)
     centralTime =  pytz.timezone('America/Chicago')

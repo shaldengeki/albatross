@@ -20,7 +20,7 @@ class testUserClass(object):
     self.bannedUser = albatross.User(self.etiConn, 134)
     self.htmlUser = albatross.User(self.etiConn, 9409)
     self.blankUserName = albatross.User(self.etiConn, 17454)
-    self.changedUserName = albatross.User(self.etiConn, 17300)
+    self.changedUserName = albatross.User(self.etiConn, 7396)
     self.currentUser = [user for user in self.etiConn.users().search(self.username) if user.name == self.username][0]
 
     self.lueTag = self.etiConn.tag("LUE")
@@ -77,8 +77,9 @@ class testUserClass(object):
 
   def testcheckUserNameChanged(self):
     assert self.validUser.formerly == None
-    assert isinstance(self.changedUserName.formerly, unicode) and self.changedUserName.formerly == u'BlackMageRefia'
-    assert isinstance(self.llamaGuy.formerly, unicode) and self.llamaGuy.formerly == u'LlamaGuy'
+    assert isinstance(self.changedUserName.formerly, list) and self.changedUserName.formerly == [u'Valmont', u'William T Riker']
+    assert isinstance(self.llamaGuy.formerly, list) and self.llamaGuy.formerly == [u'LlamaGuy']
+
 
   def testcheckUserReputation(self):
     assert isinstance(self.blankUserName.reputation, dict) and self.blankUserName.reputation == {}

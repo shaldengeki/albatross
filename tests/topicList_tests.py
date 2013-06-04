@@ -17,7 +17,7 @@ class testTopicListClass(object):
     self.currentTopicListPage = self.etiConn.page('https://boards.endoftheinter.net/topics/').html
 
     self.emptyTopicSearchList = self.etiConn.page('https://boards.endoftheinter.net/topics/?q=abiejgapsodijf').html
-    self.cyberlightTopicDict = self.etiConn.topics().parse(self.etiConn.page('https://boards.endoftheinter.net/topics/?q=insanity+enjoy').html)
+    self.cyberlightTopicDict = self.etiConn.topics().parse(self.etiConn.page('https://boards.endoftheinter.net/topics/?q=gosh+insanity+enjoy').html)
     self.anonymousTopicDict = self.etiConn.topics().parse(self.etiConn.page('https://boards.endoftheinter.net/topics/Anonymous').html)
 
     self.nwsTopicSearch = self.etiConn.topics().search(query="NWS")
@@ -38,6 +38,7 @@ class testTopicListClass(object):
 
   def testgetTopicInfoFromListing(self):
     assert isinstance(self.currentTopicList[0], albatross.Topic)
+    print self.cyberlightTopicDict
     assert isinstance(self.cyberlightTopicDict, dict) and len(self.cyberlightTopicDict) > 0 and 'tags' in self.cyberlightTopicDict and 'NWS' in [tag.name for tag in self.cyberlightTopicDict['tags']]
     assert isinstance(self.etiConn.topics().parse(self.currentTopicListPage), dict) and len(self.etiConn.topics().parse(self.currentTopicListPage)) > 0
 

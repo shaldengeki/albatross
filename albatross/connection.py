@@ -50,7 +50,7 @@ class Connection(object):
     self.cookieFile = cookieFile
     self.num_requests = num_requests
     self.parallelCurlOptions = {}
-    self.parallelCurl = None
+    self.parallelCurl = self.cookieString = None
     if username and password:
       self.cookieString = self.login()
       self.reauth = True

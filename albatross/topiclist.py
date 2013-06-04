@@ -108,24 +108,29 @@ class TopicList(object):
     if maxID is None:
       maxID = ""
 
-    if maxTime is None:
-      maxTime = datetime.datetime.now(tz=pytz.timezone('America/Chicago'))
     if activeSince is None:
       activeSince = pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1))
 
-    while maxTime > activeSince:
+    while not maxTime or maxTime > activeSince:
       # assemble the search query and request this search page's topic listing.
-      if isinstance(maxTime, datetime.datetime):
-        maxTime = calendar.timegm(maxTime.utctimetuple())
-      searchQuery = urllib.urlencode([('q', unicode(query).encode('utf-8')), ('ts', unicode(maxTime).encode('utf-8')), ('t', unicode(maxID).encode('utf-8'))])
+      requestArgs = {
+        'q': unicode(query).encode('utf-8')
+      }
+      if maxTime is not None:
+        if isinstance(maxTime, datetime.datetime):
+          maxTime = calendar.timegm(maxTime.utctimetuple())
+        requestArgs['ts'] = unicode(maxTime).encode('utf-8')
+      if maxID is not None:
+        requestArgs['t'] = unicode(maxID).encode('utf-8')
+      searchQuery = urllib.urlencode(requestArgs)
       topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString() + '?' + searchQuery).html
       
       # split the topic listing string into a list so that one topic is in each element.
       topicListingHTML = albatross.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
       if not topicListingHTML:
         break
-      topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
-      
+
+      topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []      
       originalTopicsNum = len(self._topics)
       for topic in topicListingHTML:
         topicInfo = self.parse(topic)

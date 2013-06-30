@@ -28,13 +28,15 @@ class TagList(object):
     self._tagNames = dict(zip(tags, [1]*len(tags)))
     self._tags = None
     if active:
-      parser = HTMLParser.HTMLParser()
-      mainPage = page.Page(self.connection, "https://endoftheinter.net/main.php")
-      tagLinksHTML = albatross.getEnclosedString(mainPage.html, r'<div style="font-size: 14px">', r'</div>', multiLine=True)
-      tagLinks = tagLinksHTML.split('&nbsp;&bull; ')
-      for text in tagLinks:
-        self._tagNames[parser.unescape(albatross.getEnclosedString(text, '">', '</a>')).strip()] = 1
-      self.load()
+      # Sabretooth's disabled the list of active tags for now.
+      pass
+      # parser = HTMLParser.HTMLParser()
+      # mainPage = page.Page(self.connection, "https://endoftheinter.net/main.php")
+      # tagLinksHTML = albatross.getEnclosedString(mainPage.html, r'<div style="font-size: 14px">', r'</div>', multiLine=True)
+      # tagLinks = tagLinksHTML.split('&nbsp;&bull; ')
+      # for text in tagLinks:
+      #   self._tagNames[parser.unescape(albatross.getEnclosedString(text, '">', '</a>')).strip()] = 1
+      # self.load()
   def __getitem__(self, index):
     return self.tags[index]
   def __delitem__(self, index):

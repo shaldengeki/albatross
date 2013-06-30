@@ -34,7 +34,7 @@ class testPageClass(object):
     self.etiConn.page('https://endoftheinter.net/DOESNT_EXIST_FOO').html
 
   def testhtml(self):
-    assert isinstance(self.mainPage.html, unicode) and "<h1>End of the Internet</h1>" in self.mainPage.html
+    assert isinstance(self.mainPage.html, unicode) and "Das Ende des Internets" not in self.mainPage.html
     assert isinstance(self.unauthedPage.html, unicode) and "Das Ende des Internets" in self.unauthedPage.html
 
   def testheader(self):

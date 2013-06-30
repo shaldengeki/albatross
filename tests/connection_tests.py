@@ -62,7 +62,7 @@ class testConnectionClass(object):
 
   def testtags(self):
     assert isinstance(self.etiConn.tags(), albatross.TagList)
-    assert isinstance(self.etiConn.tags(active=True), albatross.TagList) and len(self.etiConn.tags(active=True)) > 0
+    # assert isinstance(self.etiConn.tags(active=True), albatross.TagList) and len(self.etiConn.tags(active=True)) > 0
 
   def testtag(self):
     assert isinstance(self.etiConn.tag('LUE'), albatross.Tag)

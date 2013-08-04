@@ -94,15 +94,17 @@ class Post(object):
     Given some HTML containing a post, return a dict.
     """
     parser = HTMLParser.HTMLParser()
-    timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r' \| ')
-    if not timeString:
-      timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r'</div>')
+    timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r' \| ', greedy=False)
+    altTimeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r'</div>', greedy=False)
+
+    timeString = timeString if len(timeString) < len(altTimeString) else altTimeString
+
     user = self.connection.user(int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))).set({'name': parser.unescape(True and albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or u'Human')})
     postDict = {'id': int(albatross.getEnclosedString(text, r'<div class="message-container" id="m', r'">')),
     'user': user,
     'date': pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(timeString, "%m/%d/%Y %I:%M:%S %p")),
-    'html': albatross.getEnclosedString(text, r' class="message">', r'---<br />', multiLine=True, greedy=True),
-    'sig': albatross.getEnclosedString(text, r'---<br />\n', r'</td>', multiLine=True, greedy=False)
+    'html': albatross.getEnclosedString(text, r' class="message">', '(\n)?---<br />(\n)?', multiLine=True, greedy=True),
+    'sig': albatross.getEnclosedString(text, '(\n)?---<br />(\n)?', r'</td>', multiLine=True, greedy=False)
     }
     if postDict['html'] is False:
       # sigless and on message detail page.

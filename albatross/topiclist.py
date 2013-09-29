@@ -19,8 +19,8 @@ import urllib2
 import albatross
 
 class TopicListError(albatross.Error):
-  def __init__(self, topicList):
-    super(TopicListError, self).__init__()
+  def __init__(self, topicList, message=None):
+    super(TopicListError, self).__init__(message=message)
     self.topicList = topicList
   def __str__(self):
     return "\n".join([
@@ -110,6 +110,9 @@ class TopicList(object):
 
     if activeSince is None:
       activeSince = pytz.timezone('America/Chicago').localize(datetime.datetime(1970, 1, 1))
+    else:
+      # the topic listing only provides minute-level resolution, so remove seconds and microseconds from activeSince.
+      activeSince = activeSince - datetime.timedelta(0, activeSince.second, activeSince.microsecond)
 
     while not maxTime or maxTime > activeSince:
       # assemble the search query and request this search page's topic listing.
@@ -123,21 +126,26 @@ class TopicList(object):
       if maxID is not None:
         requestArgs['t'] = unicode(maxID).encode('utf-8')
       searchQuery = urllib.urlencode(requestArgs)
-      topicPageHTML = self.connection.page('https://boards.endoftheinter.net/topics/' + self.formatTagQueryString() + '?' + searchQuery).html
-      
+
+      url = 'https://boards.endoftheinter.net/topics/' + self.formatTagQueryString() + '?' + searchQuery
+      topicPageHTML = self.connection.page(url).html
+
       # split the topic listing string into a list so that one topic is in each element.
       topicListingHTML = albatross.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
       if not topicListingHTML:
+        # No topic listing table.
+        raise TopicListError(self, message="No valid topic listing table found")
         break
 
-      topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []      
+      topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []
       originalTopicsNum = len(self._topics)
       for topic in topicListingHTML:
         topicInfo = self.parse(topic)
-        if topicInfo and (not activeSince or topicInfo['lastPostTime'] > activeSince):
+        if topicInfo and topicInfo['lastPostTime'] >= activeSince:
           self._topics.append(self.connection.topic(topicInfo['id']).set(topicInfo))
       
       if len(self._topics) == originalTopicsNum:
+        # No matching topics; end our search.
         break
 
       if not recurse:

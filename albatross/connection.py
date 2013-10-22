@@ -64,6 +64,7 @@ class Connection(object):
       self.reauth = bool(reauth)
     if not self.cookieString or not self.loggedIn():
       print "Warning: invalid credentials provided."
+      raise UnauthorizedError(self)
     self.setParallelCurlObject()
     
   def parseCookieHeader(self, string):

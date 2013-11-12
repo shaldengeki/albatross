@@ -77,7 +77,7 @@ class testUserClass(object):
 
   def testcheckUserNameChanged(self):
     assert self.validUser.formerly == None
-    assert isinstance(self.changedUserName.formerly, list) and self.changedUserName.formerly == [u'Valmont', u'William T Riker']
+    assert isinstance(self.changedUserName.formerly, list) and self.changedUserName.formerly == [u'Valmont', u'William T Riker', u'Noam Chomsky']
     assert isinstance(self.llamaGuy.formerly, list) and self.llamaGuy.formerly == [u'LlamaGuy']
 
 

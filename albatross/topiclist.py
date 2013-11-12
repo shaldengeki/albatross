@@ -142,8 +142,7 @@ class TopicList(object):
       # split the topic listing string into a list so that one topic is in each element.
       topicListingHTML = albatross.getEnclosedString(topicPageHTML, '<th>Last Post</th></tr>', '</tr></table>', multiLine=True)
       if not topicListingHTML:
-        # No topic listing table.
-        raise TopicListError(self, message="No valid topic listing table found")
+        # No topic listing table. this means there are no topics that matched the search.
         break
 
       topicListingHTML = topicListingHTML.split('</tr>') if topicListingHTML else []

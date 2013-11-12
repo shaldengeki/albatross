@@ -151,8 +151,6 @@ class Topic(object):
     if topicPage.authed:
       # hooray, start pulling info.
       self.set(self.parse(topicPage.html))
-      else:
-        raise connection.UnauthorizedError(self.connection)
     else:
       raise connection.UnauthorizedError(self.connection)
 

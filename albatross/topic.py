@@ -90,6 +90,41 @@ class Topic(object):
         setattr(self, "_" + key, attrDict[key])
     return self
 
+  def parse(self, html):
+    """
+    Given the HTML of a topic page, returns a dict of attributes.
+    """
+
+    attrs = {}
+    parser = HTMLParser.HTMLParser()
+
+    attrs['archived'] = bool(re.search(r'<h2><em>This topic has been archived\. No additional messages may be posted\.</em></h2>', html))
+
+    attrs['title'] = parser.unescape(albatross.getEnclosedString(html, r'\<h1\>', r'\<\/h1\>'))
+    attrs['date'] = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(albatross.getEnclosedString(html, r'<b>Posted:</b> ', r' \| '), "%m/%d/%Y %I:%M:%S %p"))
+    userID = int(albatross.getEnclosedString(html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))
+    username = parser.unescape(True and albatross.getEnclosedString(html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=' + unicode(userID) + r'">', r'</a>') or 'Human')
+    attrs['user'] = self.connection.user(userID).set({'name': username})
+    attrs['pages'] = int(albatross.getEnclosedString(html, r'">(First Page</a> \| )?(<a href)?(\S+)?(Previous Page</a> \| )?Page \d+ of <span>', r'</span>'))
+    attrs['closed'] = attrs['archived']
+    tagNames = [urllib2.unquote(albatross.getEnclosedString(tagEntry, '<a href="/topics/', r'">')) for tagEntry in albatross.getEnclosedString(html, r"<h2><div", r"</div></h2>").split(r"</a>")[:-1] if not tagEntry.startswith(' <span')]
+    # we need to process tag names
+    # e.g. remove enclosing square braces and decode html entities.
+    cleanedTagNames = []
+    for tagName in tagNames:
+      if tagName.startswith("[") and tagName.endswith("]"):
+        tagName = tagName[1:-1]
+      cleanedTagNames.append(parser.unescape(tagName.replace("_", " ")))
+    attrs['tags'] = self.connection.tags(tags=cleanedTagNames)
+    lastPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + unicode(self.id) + '&page=' + unicode(attrs['pages']))
+    if lastPage.authed:
+      lastPagePosts = self.getPagePosts(lastPage.html)
+      lastPost = self.connection.post(1, self)
+      lastPost = lastPost.set(lastPost.parse(lastPagePosts[-1]))
+      attrs['lastPostTime'] = lastPost.date
+
+    return attrs
+
   def load(self):
     """
     Fetches topic info.
@@ -115,29 +150,7 @@ class Topic(object):
 
     if topicPage.authed:
       # hooray, start pulling info.
-      parser = HTMLParser.HTMLParser()
-      self._title = parser.unescape(albatross.getEnclosedString(topicPage.html, r'\<h1\>', r'\<\/h1\>'))
-      self._date = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(albatross.getEnclosedString(topicPage.html, r'<b>Posted:</b> ', r' \| '), "%m/%d/%Y %I:%M:%S %p"))
-      userID = int(albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))
-      username = parser.unescape(True and albatross.getEnclosedString(topicPage.html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=' + unicode(userID) + r'">', r'</a>') or 'Human')
-      self._user = self.connection.user(userID).set({'name': username})
-      self._pages = int(albatross.getEnclosedString(topicPage.html, r'">(First Page</a> \| )?(<a href)?(\S+)?(Previous Page</a> \| )?Page \d+ of <span>', r'</span>'))
-      self._closed = self._archived
-      tagNames = [urllib2.unquote(albatross.getEnclosedString(tagEntry, '<a href="/topics/', r'">')) for tagEntry in albatross.getEnclosedString(topicPage.html, r"<h2><div", r"</div></h2>").split(r"</a>")[:-1] if not tagEntry.startswith(' <span')]
-      # we need to process tag names
-      # e.g. remove enclosing square braces and decode html entities.
-      cleanedTagNames = []
-      for tagName in tagNames:
-        if tagName.startswith("[") and tagName.endswith("]"):
-          tagName = tagName[1:-1]
-        cleanedTagNames.append(parser.unescape(tagName.replace("_", " ")))
-      self._tags = self.connection.tags(tags=cleanedTagNames)
-      lastPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + unicode(self.id) + '&page=' + unicode(self._pages))
-      if lastPage.authed:
-        lastPagePosts = self.getPagePosts(lastPage.html)
-        lastPost = self.connection.post(1, self)
-        lastPost = lastPost.set(lastPost.parse(lastPagePosts[-1]))
-        self._lastPostTime = lastPost.date
+      self.set(self.parse(topicPage.html))
       else:
         raise connection.UnauthorizedError(self.connection)
     else:

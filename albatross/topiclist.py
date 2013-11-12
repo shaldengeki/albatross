@@ -93,7 +93,16 @@ class TopicList(object):
       lastPostTime = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(thisTopic.group('lastPostTime'), "%m/%d/%Y %H:%M"))
     else:
       lastPostTime = False
-    return dict([('id', int(thisTopic.group('topicID'))), ('title', parser.unescape(thisTopic.group('title'))), ('user', user), ('postCount', int(thisTopic.group('postCount'))), ('newPosts', newPosts), ('lastPostTime', lastPostTime), ('closed', closedTopic), ('tags', tags)])
+    return {
+      'id': int(thisTopic.group('topicID')),
+      'title': parser.unescape(thisTopic.group('title')),
+      'user': user,
+      'postCount': int(thisTopic.group('postCount')),
+      'newPosts': newPosts,
+      'lastPostTime': lastPostTime,
+      'closed': closedTopic,
+      'tags': tags
+    }
 
   def search(self, query="", maxTime=None, maxID=None, activeSince=None, topics=None, recurse=False):
     """

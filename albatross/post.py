@@ -91,7 +91,7 @@ class Post(object):
 
   def parse(self, text):
     """
-    Given some HTML containing a post, return a dict.
+    Given some HTML containing a post, return a dict of attributes.
     """
     parser = HTMLParser.HTMLParser()
     timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r' \| ', greedy=False)
@@ -100,25 +100,26 @@ class Post(object):
     timeString = timeString if len(timeString) < len(altTimeString) else altTimeString
 
     user = self.connection.user(int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))).set({'name': parser.unescape(True and albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or u'Human')})
-    postDict = {'id': int(albatross.getEnclosedString(text, r'<div class="message-container" id="m', r'">')),
-    'user': user,
-    'date': pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(timeString, "%m/%d/%Y %I:%M:%S %p")),
-    'html': albatross.getEnclosedString(text, r' class="message">', '(\n)?---<br />(\n)?', multiLine=True, greedy=True),
-    'sig': albatross.getEnclosedString(text, '(\n)?---<br />(\n)?', r'</td>', multiLine=True, greedy=False)
+    attrs = {
+      'id': int(albatross.getEnclosedString(text, r'<div class="message-container" id="m', r'">')),
+      'user': user,
+      'date': pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(timeString, "%m/%d/%Y %I:%M:%S %p")),
+      'html': albatross.getEnclosedString(text, r' class="message">', '(\n)?---<br />(\n)?', multiLine=True, greedy=True),
+      'sig': albatross.getEnclosedString(text, '(\n)?---<br />(\n)?', r'</td>', multiLine=True, greedy=False)
     }
-    if postDict['html'] is False:
+    if attrs['html'] is False:
       # sigless and on message detail page.
-      postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'</td>', multiLine=True, greedy=False)
-      postDict['sig'] = u""
-    if postDict['html'] is False:
+      attrs['html'] = albatross.getEnclosedString(text, r' class="message">', r'</td>', multiLine=True, greedy=False)
+      attrs['sig'] = u""
+    if attrs['html'] is False:
       # sigless and on topic listing.
-      postDict['html'] = albatross.getEnclosedString(text, r' class="message">', r'', multiLine=True, greedy=True)
-    if postDict['html'] is False:
+      attrs['html'] = albatross.getEnclosedString(text, r' class="message">', r'', multiLine=True, greedy=True)
+    if attrs['html'] is False:
       raise MalformedPostError(self, self.topic, unicode(text))
-    postDict['html'] = postDict['html'].rstrip("\n")
-    if postDict['sig'] is not False:
-      postDict['sig'] = postDict['sig'].rstrip("\n")
-    return postDict
+    attrs['html'] = attrs['html'].rstrip("\n")
+    if attrs['sig'] is not False:
+      attrs['sig'] = attrs['sig'].rstrip("\n")
+    return attrs
 
   def load(self):
     """

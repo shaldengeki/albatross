@@ -80,6 +80,58 @@ class User(object):
         setattr(self, "_" + key, attrDict[key])
     return self
 
+  def parse(self, html):
+    """
+    Parses a user's profile page.
+    Returns a dict of attributes.
+    """
+    attrs = {}
+    parser = HTMLParser.HTMLParser()
+    centralTime = pytz.timezone("America/Chicago")
+
+    attrs['id'] = int(albatross.getEnclosedString(html, "<td>User ID</td>\s+<td>", r"</td>"))
+    attrs['name'] = parser.unescape(albatross.getEnclosedString(html, r'<th colspan="2">Current Information for ', r'</th>'))
+    try:
+      attrs['level'] = int(albatross.getEnclosedString(html, r"""<td><a href="//endoftheinter\.net/profile\.php\?user=""" + str(self.id) + """\">""" + re.escape(xml.sax.saxutils.escape(self.name)) + """</a> \(""", r'\)'))
+    except ValueError:
+      # User has a non-integral level.
+      attrs['level'] = 0
+    matchStatus = albatross.getEnclosedString(html, "<td>Status</td>\s+<td>", r"</td>")
+    attrs['banned'] = False
+    attrs['suspended'] = False
+    if matchStatus:
+      if matchStatus == '<b>Banned</b>':
+        attrs['banned'] = True
+      else:
+        attrs['suspended'] = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(matchStatus, '<b>Suspended until:</b> ', ''), "%m/%d/%Y %I:%M:%S %p"))
+    attrs['formerly'] = None
+    nameChanged = albatross.getEnclosedString(html, "<td>Formerly</td>\s+<td>", "</td>")
+    if nameChanged:
+      attrs['formerly'] = nameChanged.split(", ")
+    attrs['reputation'] = {}
+    reputationText = albatross.getEnclosedString(html, r'<td>Reputation</td><td style="line-height:1.6em">', r'</td>')
+    if reputationText:
+      for repLine in reputationText.split("&bull; "):
+        tagName = parser.unescape(albatross.getEnclosedString(repLine, r'">', r'</a>'))
+        tagRep = int(re.sub('\([0-9\,]+\)', '', albatross.getEnclosedString(repLine, r':&nbsp;', '').replace('&nbsp;', '')).replace(",", ""))
+        attrs['reputation'][self.connection.tag(tagName)] = tagRep
+    tokenText = albatross.getEnclosedString(html, '<td>Tokens</td>\s+<td>', '</td>')
+    if not tokenText:
+      tokenText = 0
+    attrs['tokens'] = int(tokenText)
+    attrs['goodTokens'] = int(albatross.getEnclosedString(html, '<td>(<a href="tokenlist\.php\?user=' + str(self.id) + '&amp;type=2">)?Good&nbsp;Tokens(</a>)?</td>\s+<td>', '</td>'))
+    attrs['badTokens'] = int(albatross.getEnclosedString(html, '<td>(<a href="tokenlist\.php\?user=' + str(self.id) + '&amp;type=1">)?Bad Tokens(</a>)?</td>\s+<td>', '</td>'))
+    attrs['created'] = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(html, '<td>Account Created</td>\s+<td>', '</td>'), "%m/%d/%Y"))
+    attrs['active'] = bool(re.search('\(online now\)', albatross.getEnclosedString(html, '<td>Last Active</td>\s+<td>', '</td>')))
+    attrs['lastActive'] = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(html, '<td>Last Active</td>\s+<td>', '( \(online now\))?</td>'), "%m/%d/%Y"))
+    attrs['sig'] = True and albatross.getEnclosedString(html, '<td>Signature</td>\s+<td>', '</td>') or None
+    attrs['quote'] = True and albatross.getEnclosedString(html, '<td>Quote</td>\s+<td>', '</td>') or None
+    attrs['email'] = True and albatross.getEnclosedString(html, '<td>Email Address</td>\s+<td>', '</td>') or None
+    attrs['im'] = True and albatross.getEnclosedString(html, '<td>Instant&nbsp;Messaging</td>\s+<td>', '</td>') or None
+    attrs['picture'] = True and albatross.getEnclosedString(html, '<td>Picture</td>\s+<td>\s*<a target="_blank" imgsrc="http:', '" href') or None
+
+    return attrs
+
   def load(self):
     """
     Fetches user info.
@@ -93,48 +145,7 @@ class User(object):
 
     if userPage.authed:
       # hooray, start pulling info.
-      parser = HTMLParser.HTMLParser()
-      centralTime = pytz.timezone("America/Chicago")
-      self.id = int(albatross.getEnclosedString(userPage.html, "<td>User ID</td>\s+<td>", r"</td>"))
-      self._name = parser.unescape(albatross.getEnclosedString(userPage.html, r'<th colspan="2">Current Information for ', r'</th>'))
-      try:
-        self._level = int(albatross.getEnclosedString(userPage.html, r"""<td><a href="//endoftheinter\.net/profile\.php\?user=""" + str(self.id) + """\">""" + re.escape(xml.sax.saxutils.escape(self.name)) + """</a> \(""", r'\)'))
-      except ValueError:
-        # User has a non-integral level.
-        self._level = 0
-      matchStatus = albatross.getEnclosedString(userPage.html, "<td>Status</td>\s+<td>", r"</td>")
-      self._banned = False
-      self._suspended = False
-      if matchStatus:
-        if matchStatus == '<b>Banned</b>':
-          self._banned = True
-        else:
-          self._suspended = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(matchStatus, '<b>Suspended until:</b> ', ''), "%m/%d/%Y %I:%M:%S %p"))
-      self._formerly = None
-      nameChanged = albatross.getEnclosedString(userPage.html, "<td>Formerly</td>\s+<td>", "</td>")
-      if nameChanged:
-        self._formerly = nameChanged.split(", ")
-      self._reputation = {}
-      reputationText = albatross.getEnclosedString(userPage.html, r'<td>Reputation</td><td style="line-height:1.6em">', r'</td>')
-      if reputationText:
-        for repLine in reputationText.split("&bull; "):
-          tagName = parser.unescape(albatross.getEnclosedString(repLine, r'">', r'</a>'))
-          tagRep = int(re.sub('\([0-9\,]+\)', '', albatross.getEnclosedString(repLine, r':&nbsp;', '').replace('&nbsp;', '')).replace(",", ""))
-          self._reputation[self.connection.tag(tagName)] = tagRep
-      tokenText = albatross.getEnclosedString(userPage.html, '<td>Tokens</td>\s+<td>', '</td>')
-      if not tokenText:
-        tokenText = 0
-      self._tokens = int(tokenText)
-      self._goodTokens = int(albatross.getEnclosedString(userPage.html, '<td>(<a href="tokenlist\.php\?user=' + str(self.id) + '&amp;type=2">)?Good&nbsp;Tokens(</a>)?</td>\s+<td>', '</td>'))
-      self._badTokens = int(albatross.getEnclosedString(userPage.html, '<td>(<a href="tokenlist\.php\?user=' + str(self.id) + '&amp;type=1">)?Bad Tokens(</a>)?</td>\s+<td>', '</td>'))
-      self._created = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(userPage.html, '<td>Account Created</td>\s+<td>', '</td>'), "%m/%d/%Y"))
-      self._active = bool(re.search('\(online now\)', albatross.getEnclosedString(userPage.html, '<td>Last Active</td>\s+<td>', '</td>')))
-      self._lastActive = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(userPage.html, '<td>Last Active</td>\s+<td>', '( \(online now\))?</td>'), "%m/%d/%Y"))
-      self._sig = True and albatross.getEnclosedString(userPage.html, '<td>Signature</td>\s+<td>', '</td>') or None
-      self._quote = True and albatross.getEnclosedString(userPage.html, '<td>Quote</td>\s+<td>', '</td>') or None
-      self._email = True and albatross.getEnclosedString(userPage.html, '<td>Email Address</td>\s+<td>', '</td>') or None
-      self._im = True and albatross.getEnclosedString(userPage.html, '<td>Instant&nbsp;Messaging</td>\s+<td>', '</td>') or None
-      self._picture = True and albatross.getEnclosedString(userPage.html, '<td>Picture</td>\s+<td>\s*<a target="_blank" imgsrc="http:', '" href') or None
+      self.set(self.parse(userPage.html))
     else:
       raise connection.UnauthorizedError(self.connection)
 

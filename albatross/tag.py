@@ -85,7 +85,7 @@ class Tag(object):
 
   def parse(self, text):
     """
-    Given some JSON containing a tag, return a dict.
+    Given some JSON containing a tag, return a dict of attributes.
     """
     parser = HTMLParser.HTMLParser()
     text = text[1:]

@@ -70,8 +70,12 @@ class UserList(object):
     username = parser.unescape(thisUser.group('username')) if thisUser.group('username') else None
     created = centralTime.localize(datetime.datetime.strptime(thisUser.group('created'), "%m/%d/%Y")) if thisUser.group('created') else None
     lastActive = centralTime.localize(datetime.datetime.strptime(thisUser.group('lastActive'), "%m/%d/%Y")) if thisUser.group('lastActive') else None
-
-    return dict([('id', userID), ('name', username), ('created', created), ('lastActive', lastActive)])
+    return {
+      'id': userID,
+      'name': username,
+      'created': created,
+      'lastActive': lastActive
+    }
 
   def getPageUsers(self, text):
     """

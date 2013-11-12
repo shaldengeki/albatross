@@ -97,7 +97,7 @@ class Post(object):
     timeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r' \| ', greedy=False)
     altTimeString = albatross.getEnclosedString(text, r'<b>Posted:</b> ', r'</div>', greedy=False)
 
-    timeString = timeString if len(timeString) < len(altTimeString) else altTimeString
+    timeString = timeString if timeString and len(timeString) < len(altTimeString) else altTimeString
 
     user = self.connection.user(int(albatross.getEnclosedString(text, r'<b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))).set({'name': parser.unescape(True and albatross.getEnclosedString(text, r'<b>From:</b>\ <a href="//endoftheinter\.net/profile\.php\?user=\d+">', r'</a>') or u'Human')})
     attrs = {

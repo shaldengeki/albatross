@@ -100,6 +100,8 @@ class Topic(object):
 
     attrs['archived'] = bool(re.search(r'<h2><em>This topic has been archived\. No additional messages may be posted\.</em></h2>', html))
 
+    subdomain = "archives" if attrs['archived'] else "boards"
+
     attrs['title'] = parser.unescape(albatross.getEnclosedString(html, r'\<h1\>', r'\<\/h1\>'))
     attrs['date'] = pytz.timezone('America/Chicago').localize(datetime.datetime.strptime(albatross.getEnclosedString(html, r'<b>Posted:</b> ', r' \| '), "%m/%d/%Y %I:%M:%S %p"))
     userID = int(albatross.getEnclosedString(html, r'<div class="message-top"><b>From:</b> <a href="//endoftheinter\.net/profile\.php\?user=', r'">'))

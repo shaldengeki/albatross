@@ -92,7 +92,7 @@ class User(object):
     attrs['id'] = int(albatross.getEnclosedString(html, "<td>User ID</td>\s+<td>", r"</td>"))
     attrs['name'] = parser.unescape(albatross.getEnclosedString(html, r'<th colspan="2">Current Information for ', r'</th>'))
     try:
-      attrs['level'] = int(albatross.getEnclosedString(html, r"""<td><a href="//endoftheinter\.net/profile\.php\?user=""" + str(self.id) + """\">""" + re.escape(xml.sax.saxutils.escape(self.name)) + """</a> \(""", r'\)'))
+      attrs['level'] = int(albatross.getEnclosedString(html, r"""<td><a href="//endoftheinter\.net/profile\.php\?user=""" + str(attrs['id']) + """\">""" + re.escape(xml.sax.saxutils.escape(attrs['name'])) + """</a> \(""", r'\)'))
     except ValueError:
       # User has a non-integral level.
       attrs['level'] = 0
@@ -119,8 +119,8 @@ class User(object):
     if not tokenText:
       tokenText = 0
     attrs['tokens'] = int(tokenText)
-    attrs['goodTokens'] = int(albatross.getEnclosedString(html, '<td>(<a href="tokenlist\.php\?user=' + str(self.id) + '&amp;type=2">)?Good&nbsp;Tokens(</a>)?</td>\s+<td>', '</td>'))
-    attrs['badTokens'] = int(albatross.getEnclosedString(html, '<td>(<a href="tokenlist\.php\?user=' + str(self.id) + '&amp;type=1">)?Bad Tokens(</a>)?</td>\s+<td>', '</td>'))
+    attrs['goodTokens'] = int(albatross.getEnclosedString(html, '<td>(<a href="tokenlist\.php\?user=' + str(attrs['id']) + '&amp;type=2">)?Good&nbsp;Tokens(</a>)?</td>\s+<td>', '</td>'))
+    attrs['badTokens'] = int(albatross.getEnclosedString(html, '<td>(<a href="tokenlist\.php\?user=' + str(attrs['id']) + '&amp;type=1">)?Bad Tokens(</a>)?</td>\s+<td>', '</td>'))
     attrs['created'] = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(html, '<td>Account Created</td>\s+<td>', '</td>'), "%m/%d/%Y"))
     attrs['active'] = bool(re.search('\(online now\)', albatross.getEnclosedString(html, '<td>Last Active</td>\s+<td>', '</td>')))
     attrs['lastActive'] = centralTime.localize(datetime.datetime.strptime(albatross.getEnclosedString(html, '<td>Last Active</td>\s+<td>', '( \(online now\))?</td>'), "%m/%d/%Y"))

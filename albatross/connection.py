@@ -37,7 +37,7 @@ class Connection(object):
   '''
   Provides connection to ETI.
   '''
-  def __init__(self, username="", password="", cookieString="", cookieFile="", reauth=None, loginSite=None, num_requests=20):
+  def __init__(self, username="", password="", cookieString="", cookieFile="", reauth=None, loginSite=None, concurrents=20):
     """
     Connection constructor.
     Expects either a username + password pair, or a cookie string and possibly a cookie file to read updated cookie strings from.
@@ -48,7 +48,8 @@ class Connection(object):
     self.password = password
     self.loginSite = loginSite if loginSite is not None else albatross.SITE_MAIN
     self.cookieFile = cookieFile
-    self.num_requests = num_requests
+    self.concurrents = int(concurrents)
+    self.numRequests = 0
     self.parallelCurlOptions = {}
     self.parallelCurl = self.cookieString = None
     if username and password:
@@ -125,7 +126,7 @@ class Connection(object):
     try:
       self.parallelCurl.setoptions(self.parallelCurlOptions)
     except AttributeError:
-      self.parallelCurl = pyparallelcurl.ParallelCurl(self.num_requests, self.parallelCurlOptions)
+      self.parallelCurl = pyparallelcurl.ParallelCurl(self.concurrents, self.parallelCurlOptions)
     
   def reauthenticate(self):
     """

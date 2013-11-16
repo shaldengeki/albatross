@@ -51,6 +51,7 @@ class Page(object):
     Uses cURL to read a page's headers.
     """
     for x in range(retries): # Limit the number of retries.
+      self.connection.numRequests += 1
       header = cStringIO.StringIO()
       pageRequest = pycurl.Curl()
       
@@ -77,6 +78,7 @@ class Page(object):
     """
     
     for x in range(retries): # Limit the number of retries.
+      self.connection.numRequests += 1
       response = cStringIO.StringIO()
       header = cStringIO.StringIO()
       pageRequest = pycurl.Curl()

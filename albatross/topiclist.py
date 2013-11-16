@@ -161,7 +161,7 @@ class TopicList(object):
       # we can't parallelize this, since we have no way of predicting the next ts and t parameters.
       maxTime = self._topics[-1].lastPostTime
       maxID = self._topics[-1].id
-    self._topics = sorted(self._topics, key=lambda topic: topic.id, reverse=True)
+    self._topics = sorted(self._topics, key=lambda topic: topic.lastPostTime, reverse=True)
     return self
 
   @property

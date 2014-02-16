@@ -15,6 +15,7 @@ import urllib
 
 import albatross
 import page
+import base
 
 class UserListError(albatross.Error):
   def __init__(self, topicList):
@@ -25,12 +26,12 @@ class UserListError(albatross.Error):
         super(UserListError, self).__str__()
       ])
 
-class UserList(object):
+class UserList(base.Base):
   '''
   User list-loading object for albatross.
   '''
   def __init__(self, conn):
-    self.connection = conn
+    super(UserList, self).__init__(conn)
     self._users = []
     self._userIDs = {}
 

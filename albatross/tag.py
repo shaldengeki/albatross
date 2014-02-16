@@ -16,6 +16,7 @@ import urllib
 import albatross
 import connection
 import page
+import base
 
 class InvalidTagError(albatross.Error):
   def __init__(self, tag):
@@ -37,12 +38,12 @@ class MalformedTagError(InvalidTagError):
         "Text: " + unicode(self.text)
       ])
 
-class Tag(object):
+class Tag(base.Base):
   '''
   Tag-loading object for albatross.
   '''
   def __init__(self, conn, name):
-    self.connection = conn
+    super(Tag, self).__init__(conn)
     self.name = unicode(name)
     self._staff = None
     self._description = None
@@ -72,30 +73,32 @@ class Tag(object):
   def __eq__(self, tag):
     return self.name == tag.name
 
-  def set(self, attrDict):
+  def set(self, attr_dict):
     """
     Sets attributes of this tag object with keys found in dict.
     """
-    for key in attrDict:
-      if key == "name":
-        self.name = attrDict["name"]
-      else:
-        setattr(self, "_" + key, attrDict[key])
+    super(Tag, self).set(attr_dict)
+    if hasattr(self, '_name'):
+      self.name = self._name
+      del self._name
     return self
 
   def parse(self, text):
     """
-    Given some JSON containing a tag, return a dict of attributes.
+    Given some JSON containing a tag or list of tags, return a dict of attributes for the current tag.
     """
-    parser = HTMLParser.HTMLParser()
     text = text[1:]
     try:
       tagJSON = json.loads(text)
     except ValueError:
-      print "Warning: invalid JSON object provided by ETI ajax tag interface."
       raise MalformedTagError(self, unicode(text))
     if len(tagJSON) < 1:
       raise MalformedTagError(self, unicode(tagJSON))
+
+    # match only the tag in this JSON that has this tag's name.
+    tagJSON = filter(lambda x: x[0] == self.name if not x[0].startswith("[") else x[1:-1] == self.name, tagJSON)
+    if not tagJSON:
+      raise InvalidTagError(self)
     tagJSON = tagJSON[0]
     name = tagJSON[0]
     if name.startswith("["):
@@ -122,6 +125,8 @@ class Tag(object):
       for administrator in administratorTags:
         user = self.connection.user(int(albatross.getEnclosedString(administrator, r"\?user=", r'">'))).set({'name': albatross.getEnclosedString(administrator, r'">', r"</a>")})
         tag['staff'].append({'user': user, 'role':'administrator'})
+
+    parser = HTMLParser.HTMLParser()
     descriptionText = albatross.getEnclosedString(tagJSON[1][0], r":</b> ", descriptionEndTag)
     if descriptionText:
       tag['description'] = parser.unescape(descriptionText)
@@ -143,7 +148,7 @@ class Tag(object):
     """
     Fetches tag info.
     """
-    tagInfoParams = urllib.urlencode([('e', ''), ('q', unicode(self.name).encode('utf-8')), ('n', '1')])
+    tagInfoParams = urllib.urlencode([('e', ''), ('q', unicode(self.name).encode('utf-8'))])
     tagURL = "https://boards.endoftheinter.net/async-tag-query.php?" + tagInfoParams
     tagPage = self.connection.page(tagURL)
     # check to see if this page is valid.
@@ -158,33 +163,28 @@ class Tag(object):
       raise connection.UnauthorizedError(self.connection)
 
   @property
+  @base.loadable
   def staff(self):
-    if self._staff is None:
-      self.load()
     return self._staff
 
   @property
+  @base.loadable
   def description(self):
-    if self._description is None:
-      self.load()
     return self._description
 
   @property
+  @base.loadable
   def related(self):
-    if self._related is None:
-      self.load()
     return self._related
 
   @property
+  @base.loadable
   def forbidden(self):
-    if self._forbidden is None:
-      self.load()
     return self._forbidden
 
   @property
+  @base.loadable
   def dependent(self):
-    if self._dependent is None:
-      self.load()
     return self._dependent
 
   def topics(self):

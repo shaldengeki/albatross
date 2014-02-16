@@ -1,6 +1,7 @@
 from albatross import *
 from connection import *
 from page import *
+from base import *
 from topic import *
 from topiclist import *
 from post import *

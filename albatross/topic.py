@@ -18,6 +18,7 @@ import urllib2
 import albatross
 import connection
 import page
+import base
 
 class InvalidTopicError(albatross.Error):
   def __init__(self, topic):
@@ -37,12 +38,12 @@ class ArchivedTopicError(InvalidTopicError):
       "Archived: " + unicode(self.topic._archived)
       ])
 
-class Topic(object):
+class Topic(base.Base):
   '''
   Topic-loading object for albatross.
   '''
   def __init__(self, conn, id, page=1):
-    self.connection = conn
+    super(Topic, self).__init__(conn)
     self.id = id
     self.page = page
     if not isinstance(id, int) or int(id) < 1:
@@ -81,13 +82,10 @@ class Topic(object):
     """
     Sets attributes of this topic object with keys found in dict.
     """
-    for key in attrDict:
-      if key == 'id':
-        self.id = attrDict[key]
-      elif key == 'page':
-        self.page = attrDict[key]
-      else:
-        setattr(self, "_" + key, attrDict[key])
+    super(Topic, self).set(attrDict)
+    if hasattr(self, '_page'):
+      self.page = self._page
+      del self._page
     return self
 
   def parse(self, html):
@@ -157,54 +155,46 @@ class Topic(object):
       raise connection.UnauthorizedError(self.connection)
 
   @property
+  @base.loadable
   def date(self):
-    if self._date is None:
-      self.load()
     return self._date
   @date.setter
   def date(self, stamp):
     self._date = stamp
 
   @property
+  @base.loadable
   def title(self):
-    if self._title is None:
-      self.load()
     return self._title
 
   @property
+  @base.loadable
   def archived(self):
-    if self._archived is None:
-      self.load()
     return self._archived
 
   @property
+  @base.loadable
   def closed(self):
-    if self._closed is None:
-      self.load()
     return self._closed
 
   @property
+  @base.loadable
   def pages(self):
-    if self._pages is None:
-      self.load()
     return self._pages
 
   @property
+  @base.loadable
   def tags(self):
-    if self._tags is None:
-      self.load()
     return self._tags
 
   @property
+  @base.loadable
   def user(self):
-    if self._user is None:
-      self.load()
     return self._user
 
   @property
+  @base.loadable
   def lastPostTime(self):
-    if self._lastPostTime is None:
-      self.load()
     return self._lastPostTime
 
   def getPagePosts(self, text):

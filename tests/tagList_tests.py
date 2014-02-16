@@ -19,7 +19,7 @@ class testTagListClass(object):
     self.tvTag = self.etiConn.tag("TV")
     self.animeTag = self.etiConn.tag("Anime")
 
-    self.lueTagPage = self.etiConn.page('https://boards.endoftheinter.net/async-tag-query.php?e&n=1&q=LUE')
+    self.lueTagPage = self.etiConn.page('https://boards.endoftheinter.net/async-tag-query.php?e&q=LUE')
 
   def testappendTag(self):
     self.emptyTagList = self.etiConn.tags(tags=[])

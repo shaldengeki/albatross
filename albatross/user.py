@@ -16,6 +16,7 @@ import xml.sax.saxutils
 
 import albatross
 import connection
+import base
 
 class InvalidUserError(albatross.Error):
   def __init__(self, user):
@@ -27,12 +28,12 @@ class InvalidUserError(albatross.Error):
       "ID: " + unicode(self.user.id)
       ])
 
-class User(object):
+class User(base.Base):
   '''
   User-loading object for albatross.
   '''
   def __init__(self, conn, id):
-    self.connection = conn
+    super(User, self).__init__(conn)
     self.id = id
     if not isinstance(self.id, int) or int(self.id) < 0:
       raise InvalidUserError(self)
@@ -150,103 +151,86 @@ class User(object):
       raise connection.UnauthorizedError(self.connection)
 
   @property
+  @base.loadable
   def name(self):
-    if self._name is None:
-      self.load()
     return self._name
 
   @property
+  @base.loadable
   def level(self):
-    if self._level is None:
-      self.load()
     return self._level
 
   @property
+  @base.loadable
   def formerly(self):
-    if self._formerly is None:
-      self.load()
     return self._formerly
 
   @property
+  @base.loadable
   def banned(self):
-    if self._banned is None:
-      self.load()
     return self._banned
 
   @property
+  @base.loadable
   def suspended(self):
-    if self._suspended is None:
-      self.load()
     return self._suspended
 
   @property
+  @base.loadable
   def reputation(self):
-    if self._reputation is None:
-      self.load()
     return self._reputation
 
   @property
+  @base.loadable
   def tokens(self):
-    if self._tokens is None:
-      self.load()
     return self._tokens
 
   @property
+  @base.loadable
   def goodTokens(self):
-    if self._goodTokens is None:
-      self.load()
     return self._goodTokens
 
   @property
+  @base.loadable
   def badTokens(self):
-    if self._badTokens is None:
-      self.load()
     return self._badTokens
 
   @property
+  @base.loadable
   def created(self):
-    if self._created is None:
-      self.load()
     return self._created
 
   @property
+  @base.loadable
   def active(self):
-    if self._active is None:
-      self.load()
     return self._active
 
   @property
+  @base.loadable
   def lastActive(self):
-    if self._lastActive is None:
-      self.load()
     return self._lastActive
 
   @property
+  @base.loadable
   def sig(self):
-    if self._sig is None:
-      self.load()
     return self._sig
 
   @property
+  @base.loadable
   def quote(self):
-    if self._quote is None:
-      self.load()
     return self._quote
 
   @property
+  @base.loadable
   def email(self):
-    if self._email is None:
-      self.load()
     return self._email
 
   @property
+  @base.loadable
   def im(self):
-    if self._im is None:
-      self.load()
     return self._im
 
   @property
+  @base.loadable
   def picture(self):
-    if self._picture is None:
-      self.load()
     return self._picture

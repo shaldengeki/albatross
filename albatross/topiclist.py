@@ -17,6 +17,7 @@ import urllib
 import urllib2
 
 import albatross
+import base
 
 class TopicListError(albatross.Error):
   def __init__(self, topicList, message=None):
@@ -27,12 +28,12 @@ class TopicListError(albatross.Error):
         super(TopicListError, self).__str__()
       ])
 
-class TopicList(object):
+class TopicList(base.Base):
   '''
   Topic list-loading object for albatross.
   '''
   def __init__(self, conn, allowedTags=None, forbiddenTags=None):
-    self.connection = conn
+    super(TopicList, self).__init__(conn)
     self._topics = []
     self._allowedTags = allowedTags
     self._forbiddenTags = forbiddenTags
@@ -158,7 +159,7 @@ class TopicList(object):
 
       if not recurse:
         break
-      # we can't parallelize this, since we have no way of predicting the next ts and t parameters.
+      # we can't parallelize this, since we have no way of predicting the next ts and t parameters. DAMN YOU KEYSET PAGING
       maxTime = self._topics[-1].lastPostTime
       maxID = self._topics[-1].id
     self._topics = sorted(self._topics, key=lambda topic: topic.lastPostTime, reverse=True)

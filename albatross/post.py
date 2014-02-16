@@ -15,6 +15,7 @@ import re
 
 import albatross
 import connection
+import base
 import topic
 
 class InvalidPostError(topic.InvalidTopicError):
@@ -36,12 +37,12 @@ class MalformedPostError(InvalidPostError):
         "Text: " + unicode(self.text)
       ])
 
-class Post(object):
+class Post(base.Base):
   '''
   Post-loading object for albatross.
   '''
   def __init__(self, conn, id, topic):
-    self.connection = conn
+    super(Post, self).__init__(conn)
     self.id = id
     self.topic = topic
     if not isinstance(self.id, int) or int(self.id) < 1:
@@ -77,17 +78,6 @@ class Post(object):
 
   def __eq__(self, post):
     return self.id == post.id
-
-  def set(self, attrDict):
-    """
-    Sets attributes of this post object with keys found in dict.
-    """
-    for key in attrDict:
-      if key == "id":
-        self.id = int(attrDict["id"])
-      else:
-        setattr(self, "_" + key, attrDict[key])
-    return self
 
   def parse(self, text):
     """
@@ -137,25 +127,21 @@ class Post(object):
       raise connection.UnauthorizedError(self.connection)
 
   @property
+  @base.loadable
   def date(self):
-    if self._date is None:
-      self.load()
     return self._date
 
   @property
+  @base.loadable
   def html(self):
-    if self._html is None:
-      self.load()
     return self._html
 
   @property
+  @base.loadable
   def user(self):
-    if self._user is None:
-      self.load()
     return self._user
 
   @property
+  @base.loadable
   def sig(self):
-    if self._sig is None:
-      self.load()
     return self._sig

@@ -12,17 +12,18 @@ import urllib
 
 import albatross
 import page
+import base
 import tag
 
 class TagListError(albatross.Error):
   pass
 
-class TagList(object):
+class TagList(base.Base):
   '''
   Tag list-loading object for albatross.
   '''
   def __init__(self, conn, tags=None, active=False):
-    self.connection = conn
+    super(TagList, self).__init__(conn)
     if tags is None:
       tags = []
     self._tagNames = dict(zip(tags, [1]*len(tags)))
@@ -51,7 +52,7 @@ class TagList(object):
   def __reversed__(self):
     return self.tags[::-1]
 
-  def appendTag(self, text, url, curlHandle, tagList):
+  def append(self, text, url, curlHandle, tagList):
     """
     Takes the HTML of ETI's ajax tag interface and parses info from it.
     Appends the resultant tag array to the tag list.
@@ -60,7 +61,7 @@ class TagList(object):
     thisPage._html = text
     if not thisPage.authed:
       if self.connection.reauthenticate():
-        self.connection.parallelCurl.startrequest(url, self.appendTag)
+        self.connection.parallelCurl.startrequest(url, self.append)
         return
     # parse the text given into a tag object to append to tagList.
     thisTag = self.connection.tag("")
@@ -70,7 +71,7 @@ class TagList(object):
       # workaround for tags where extended information doesn't display properly.
       if "e=" not in url:
         raise
-      self.connection.parallelCurl.startrequest(url.replace("e=&", ""), self.appendTag)
+      self.connection.parallelCurl.startrequest(url.replace("e=&", ""), self.append)
       return
 
     if thisTag and thisTag.name not in self._tagNames:
@@ -88,9 +89,8 @@ class TagList(object):
       self._tags = [self.connection.tag(tagName) for tagName in self._tagNames]
 
   @property
+  @base.loadable
   def tags(self):
-    if self._tags is None:
-      self.load()
     return self._tags
 
   def append(self, appTag):

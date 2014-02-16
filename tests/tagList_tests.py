@@ -21,16 +21,15 @@ class testTagListClass(object):
 
     self.lueTagPage = self.etiConn.page('https://boards.endoftheinter.net/async-tag-query.php?e&q=LUE')
 
-  def testappendTag(self):
+  def testappendFromTagPage(self):
     self.emptyTagList = self.etiConn.tags(tags=[])
     assert self.lueTag not in self.emptyTagList
-    self.emptyTagList.appendTag(self.lueTagPage.html, self.lueTagPage.url, None, None)
+    self.emptyTagList.appendFromTagPage(self.lueTagPage.html, self.lueTagPage.url, None, None)
     assert self.lueTag in self.emptyTagList
     self.emptyTagList = self.etiConn.tags(tags=[])
 
   def testgetActiveTags(self):
-    assert True
-    # assert isinstance(self.activeTagList, albatross.TagList) and len(self.activeTagList) > 0
+    assert isinstance(self.activeTagList, albatross.TagList) and len(self.activeTagList) > 0
 
   def testContainsTags(self):
     assert self.lueTag in self.tagList and self.tvTag in self.tagList and self.animeTag in self.tagList
@@ -39,4 +38,4 @@ class testTagListClass(object):
   def testListLength(self):
     assert len(self.tagList) == 3
     assert len(self.emptyTagList) == 0
-    # assert len(self.activeTagList) > 0
+    assert len(self.activeTagList) > 0

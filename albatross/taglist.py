@@ -52,7 +52,7 @@ class TagList(base.Base):
   def __reversed__(self):
     return self.tags[::-1]
 
-  def append(self, text, url, curlHandle, tagList):
+  def appendFromTagPage(self, text, url, curlHandle, tagList):
     """
     Takes the HTML of ETI's ajax tag interface and parses info from it.
     Appends the resultant tag array to the tag list.
@@ -61,7 +61,7 @@ class TagList(base.Base):
     thisPage._html = text
     if not thisPage.authed:
       if self.connection.reauthenticate():
-        self.connection.parallelCurl.startrequest(url, self.append)
+        self.connection.parallelCurl.startrequest(url, self.appendFromTagPage)
         return
     # parse the text given into a tag object to append to tagList.
     thisTag = self.connection.tag("")
@@ -71,7 +71,7 @@ class TagList(base.Base):
       # workaround for tags where extended information doesn't display properly.
       if "e=" not in url:
         raise
-      self.connection.parallelCurl.startrequest(url.replace("e=&", ""), self.append)
+      self.connection.parallelCurl.startrequest(url.replace("e=&", ""), self.appendFromTagPage)
       return
 
     if thisTag and thisTag.name not in self._tagNames:

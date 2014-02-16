@@ -12,6 +12,9 @@ import albatross
 import connection
 
 def loadable(func):
+  '''
+    Decorator for getters that require a load() upon first access.
+  '''
   cached_name = '_' + func.__name__
   def _decorator(self, *args, **kwargs):
     if getattr(self, cached_name) is None:

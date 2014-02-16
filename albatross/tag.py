@@ -95,10 +95,12 @@ class Tag(base.Base):
     if len(tagJSON) < 1:
       raise MalformedTagError(self, unicode(tagJSON))
 
-    # match only the tag in this JSON that has this tag's name.
-    tagJSON = filter(lambda x: x[0] == self.name if not x[0].startswith("[") else x[1:-1] == self.name, tagJSON)
+    # match only the tag in this JSON that has this tag's name, if it's set.
+    if self.name:
+      tagJSON = filter(lambda x: x[0] == self.name if not x[0].startswith("[") else x[1:-1] == self.name, tagJSON)
     if not tagJSON:
       raise InvalidTagError(self)
+      
     tagJSON = tagJSON[0]
     name = tagJSON[0]
     if name.startswith("["):

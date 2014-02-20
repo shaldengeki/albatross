@@ -43,15 +43,15 @@ class Image(base.Base):
     self.filename = unicode(filename)
     if not isinstance(self.md5, unicode) or not isinstance(self.filename, unicode):
       raise InvalidImageError(self)
-    self._relatedImages = self._relatedCount = self._topics = self._topicCount = None
+    self._related = self._relatedCount = self._topics = self._topicCount = None
 
   def __str__(self):
-    if self._relatedImages is None:
+    if self._related is None:
       self.load()
     return "\n".join([
       "MD5: " + unicode(self.md5),
       "Filename: " + unicode(self.filename),
-      "Relateds: " + unicode(self.relatedCount),
+      "related: " + unicode(self.relatedCount),
       "Topics: " + unicode(self.topicCount),
       ])
 
@@ -76,10 +76,6 @@ class Image(base.Base):
       self.filename = self._filename
       del self._filename
     return self
-
-  def appendRelateds(self, html, url, curlHandle, paramArray):
-    # given the html of a related-images page, append them to the current image's related images.
-    pass
 
   def parse(self, html):
     """
@@ -223,7 +219,7 @@ class Image(base.Base):
       md5 = imageUrlParts[-2]
       newImage = self.connection.image(md5=md5, filename=filename)
       newImage.set({'imagemap_order': (params['page'], idx)})
-      self._relatedImages.append(newImage)
+      self._related.append(newImage)
     return
 
   def getRelatedImages(self):
@@ -244,7 +240,7 @@ class Image(base.Base):
       raise InvalidImageError(self)
     numPages = int(infobar.find('span').text)
     # fetch the images on this page.
-    self._relatedImages = []
+    self._related = []
     self.appendRelatedImages(firstPage.html, firstPageUrl, self.connection.parallelCurl, {'page': 1})
 
     # now fetch all the pages.
@@ -252,16 +248,16 @@ class Image(base.Base):
       relatedPageParams = urllib.urlencode({'related': self.md5, 'page': page})
       self.connection.parallelCurl.startrequest('https://images.endoftheinter.net/imagemap.php?' + relatedPageParams, self.appendRelatedImages, {'page': page})
     self.connection.parallelCurl.finishallrequests()
-    self._relatedImages = sorted(self._relatedImages, key=lambda x: x._imagemap_order)
+    self._related = sorted(self._related, key=lambda x: x._imagemap_order)
 
   @property
-  def relatedImages(self):
+  def related(self):
     """
       Returns a list of images that are related to this image.
     """
-    if self._relatedImages is None:
+    if self._related is None:
       self.getRelatedImages()
-    return self._relatedImages
+    return self._related
 
   @property
   def relatedCount(self):
@@ -269,7 +265,7 @@ class Image(base.Base):
       Returns a count of images that are related to this image.
     """
     if self._relatedCount is None:
-      self._relatedCount = len(self.relatedImages)
+      self._relatedCount = len(self.related)
     return self._relatedCount
 
   @property

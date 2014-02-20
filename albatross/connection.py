@@ -21,6 +21,7 @@ from topiclist import TopicList
 from tag import Tag
 from taglist import TagList
 from post import Post
+from image import Image
 from user import User
 from userlist import UserList
 
@@ -209,3 +210,6 @@ class Connection(object):
 
   def users(self):
     return UserList(self)
+
+  def image(self, md5, filename):
+    return Image(self, md5, filename)

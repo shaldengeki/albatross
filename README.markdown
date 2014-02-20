@@ -22,6 +22,7 @@ Dependencies
 
 Albatross requires the following:
 
+* [bs4](http://www.crummy.com/software/BeautifulSoup/)
 * [pytz](http://pytz.sourceforge.net)
 * [pycurl](http://pycurl.sourceforge.net)
 * [pyparallelcurl](https://github.com/petewarden/pyparallelcurl)

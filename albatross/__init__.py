@@ -5,6 +5,7 @@ from base import *
 from topic import *
 from topiclist import *
 from post import *
+from image import *
 from tag import *
 from taglist import *
 from user import *

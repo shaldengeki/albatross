@@ -67,6 +67,9 @@ class testConnectionClass(object):
   def testtag(self):
     assert isinstance(self.etiConn.tag('LUE'), albatross.Tag)
 
+  def testimage(self):
+    assert isinstance(self.etiConn.image(md5='5775a805d64965e396948f8c8aadd1e1', filename='image.png'), albatross.Image)
+
   def testpost(self):
     topic = self.etiConn.topic(1)
     assert isinstance(self.etiConn.post(1, topic), albatross.Post)

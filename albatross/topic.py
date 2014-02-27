@@ -38,6 +38,13 @@ class ArchivedTopicError(InvalidTopicError):
       "Archived: " + unicode(self.topic._archived)
       ])
 
+class TopicPermissionError(InvalidTopicError):
+  def __str__(self):
+    return "\n".join([
+        super(TopicPermissionError, self).__str__(),
+      "PermissionError: " + unicode(self.topic.id)
+     ])
+
 class Topic(base.Base):
   '''
   Topic-loading object for albatross.
@@ -134,6 +141,10 @@ class Topic(base.Base):
     else:
       subdomain="boards"
     topicPage = self.connection.page('https://' + subdomain + '.endoftheinter.net/showmessages.php?topic=' + unicode(self.id))
+
+    if re.search(r'<h1>Error</h1><em>You are not authorized to view messages on this board\.</em>', topicPage.html):
+      raise TopicPermissionError(self)
+
     # check to see if this page is valid.
     if re.search(r'<h2><em>This topic has been archived\. No additional messages may be posted\.</em></h2>', topicPage.html) or re.search(r'HTTP\/1\.1 302 Moved Temporarily', topicPage.header):
       # topic is archived.

@@ -114,6 +114,16 @@ class Connection(object):
     self.setParallelCurlObject()
     return cookieString
   
+  @property
+  def user_id(self):
+    cookie_parts = cookieString.split('; ')
+    user_id = None
+    for part in cookie_parts:
+      key,value = part.split('=')
+      if key == "userid":
+        user_id = int(value)
+    return user_id
+
   def setParallelCurlObject(self):
     """
     (Re)sets the parallelCurl object to use the current cookieString.

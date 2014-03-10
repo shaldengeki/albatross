@@ -51,6 +51,7 @@ class Connection(object):
     self.cookieFile = cookieFile
     self.concurrents = int(concurrents)
     self.numRequests = 0
+    self.csrfKey = None
     self.parallelCurlOptions = {}
     self.parallelCurl = self.cookieString = None
     if username and password:
@@ -116,7 +117,7 @@ class Connection(object):
   
   @property
   def user_id(self):
-    cookie_parts = cookieString.split('; ')
+    cookie_parts = self.cookieString.split('; ')
     user_id = None
     for part in cookie_parts:
       key,value = part.split('=')

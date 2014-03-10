@@ -8,6 +8,7 @@
     Topic - Topic information retrieval and manipulation.
 '''
 
+import bs4
 import datetime
 import HTMLParser
 import pytz
@@ -55,7 +56,7 @@ class Topic(base.Base):
     self.page = page
     if not isinstance(id, int) or int(id) < 1:
       raise InvalidTopicError(self)
-    self._closed = self._archived = self._date = self._title = self._user = self._pages = self._posts = self._postCount = self._tags = self._lastPostTime = None
+    self._closed = self._archived = self._date = self._title = self._user = self._pages = self._posts = self._postCount = self._tags = self._lastPostTime = self._csrfKey = None
     self._postIDs = {}
 
   def __str__(self):
@@ -103,6 +104,8 @@ class Topic(base.Base):
     attrs = {}
     parser = HTMLParser.HTMLParser()
 
+    soup = bs4.BeautifulSoup(html)
+
     attrs['archived'] = bool(re.search(r'<h2><em>This topic has been archived\. No additional messages may be posted\.</em></h2>', html))
 
     subdomain = "archives" if attrs['archived'] else "boards"
@@ -129,7 +132,9 @@ class Topic(base.Base):
       lastPost = self.connection.post(1, self)
       lastPost = lastPost.set(lastPost.parse(lastPagePosts[-1]))
       attrs['lastPostTime'] = lastPost.date
-
+    csrfTag = soup.find("input", {"name": "h"})
+    if csrfTag:
+      attrs['csrfKey'] = csrfTag.get('value')
     return attrs
 
   def load(self):
@@ -164,6 +169,8 @@ class Topic(base.Base):
       self.set(self.parse(topicPage.html))
     else:
       raise connection.UnauthorizedError(self.connection)
+    if self._csrfKey != self.connection.csrfKey:
+      self.connection.csrfKey = self._csrfKey
 
   @property
   @base.loadable
@@ -280,3 +287,20 @@ class Topic(base.Base):
     if self._postCount is None:
       self._postCount = len(self.posts())
     return self._postCount
+
+
+  def make_post(self, html):
+    # get post-key.
+    if self.connection.csrfKey is None:
+      self.load()
+    post_fields = {
+      'topic': self.id,
+      'h': self.connection.csrfKey,
+      'message': html,
+      '-ajaxCounter': 0
+    }
+    response = self.connection.page('https://boards.endoftheinter.net/async-post.php').post(post_fields)
+    if "Message posted." in response:
+      return True
+    else:
+      return False

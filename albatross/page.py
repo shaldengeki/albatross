@@ -10,6 +10,7 @@
 
 import cStringIO
 import pycurl
+import urllib
 
 import albatross
 import connection
@@ -100,6 +101,51 @@ class Page(object):
         continue
       # check to see if ETI is acting up.
       if requestCode in {0:1, 404:1, 500:1, 501:1, 502:1, 503:1, 504:1}:
+        raise PageLoadError(self)
+      if self.needsAuth:
+        if self.checkAuthed(response):
+          self._authed = True
+          self._html = response
+          self._header = header
+          return response
+        else:
+          if self.connection.reauthenticate():
+            continue
+          else:
+            raise connection.UnauthorizedError(self.connection)
+      else:
+        return response
+    raise PageLoadError(self)
+
+  def post(self, fields, retries=1):
+    """
+    Uses cURL to POST a URL.
+    fields should be a dict of POST fields.
+    """
+    for x in range(retries): # Limit the number of retries.
+      self.connection.numRequests += 1
+      response = cStringIO.StringIO()
+      header = cStringIO.StringIO()
+      pageRequest = pycurl.Curl()
+      
+      pageRequest.setopt(pycurl.SSL_VERIFYPEER, False)
+      pageRequest.setopt(pycurl.SSL_VERIFYHOST, False)
+      pageRequest.setopt(pycurl.URL, self.url.encode('utf-8'))
+      pageRequest.setopt(pycurl.USERAGENT, 'Albatross')
+      pageRequest.setopt(pycurl.COOKIE, self.connection.cookieString.encode('utf-8') if self.connection.cookieString else "")
+      pageRequest.setopt(pycurl.POSTFIELDS, urllib.urlencode(fields))
+      pageRequest.setopt(pycurl.WRITEFUNCTION, response.write)
+      pageRequest.setopt(pycurl.HEADERFUNCTION, header.write)
+      try:
+        pageRequest.perform()
+        responseCode = int(pageRequest.getinfo(pageRequest.HTTP_CODE))
+        pageRequest.close()
+        response = response.getvalue().decode('utf-8')
+        header = header.getvalue().decode('utf-8')
+      except:
+        continue
+      # check to see if ETI is acting up.
+      if responseCode in {0:1, 404:1, 500:1, 501:1, 502:1, 503:1, 504:1}:
         raise PageLoadError(self)
       if self.needsAuth:
         if self.checkAuthed(response):

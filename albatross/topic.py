@@ -293,6 +293,8 @@ class Topic(base.Base):
     # get post-key.
     if self.connection.csrfKey is None:
       self.load()
+    if isinstance(html, unicode):
+      html = html.encode('utf-8')
     post_fields = {
       'topic': self.id,
       'h': self.connection.csrfKey,

@@ -324,6 +324,4 @@ class User(base.Base):
       'submit': 'Send Message'
     }
     response = self.connection.page('https://boards.endoftheinter.net/postmsg.php').post(post_fields)
-    if 'Message To: ' in response:
-      raise CouldNotSendPMError(self, response)
     return True

@@ -182,7 +182,6 @@ class Image(base.Base):
     self.connection.parallelCurl.finishallrequests()
     self._topics = sorted(self._topics, key=lambda x: x._imagemap_order)
 
-  @property
   def topics(self, maxPage=None):
     """
       Returns a list of topics which contain this image.
@@ -260,7 +259,6 @@ class Image(base.Base):
     self.connection.parallelCurl.finishallrequests()
     self._related = sorted(self._related, key=lambda x: x._imagemap_order)
 
-  @property
   def related(self, maxPage=None):
     """
       Returns a list of images that are related to this image.
@@ -275,7 +273,7 @@ class Image(base.Base):
       Returns a count of images that are related to this image.
     """
     if self._relatedCount is None:
-      self._relatedCount = len(self.related)
+      self._relatedCount = len(self.related())
     return self._relatedCount
 
   @property
@@ -284,5 +282,5 @@ class Image(base.Base):
       Returns a count of topics containing this image.
     """
     if self._topicCount is None:
-      self._topicCount = len(self.topics)
+      self._topicCount = len(self.topics())
     return self._relatedCount

@@ -149,41 +149,46 @@ class Image(base.Base):
       newTopic.set(topicAttrs)
       self._topics.append(newTopic)
 
-  def getTopics(self):
+  def getTopics(self, maxPage=None):
     """
       Fetches all topics which contain this image.
     """
-    # first, get the first page.
-    firstPageParams = {
-      'md5': self.md5,
-      'page': 1
-    }
-    firstPageUrl = 'https://images.endoftheinter.net/imagemap.php?' + urllib.urlencode(firstPageParams)
-    firstPage = self.connection.page(firstPageUrl)
-    firstPageSoup = bs4.BeautifulSoup(firstPage.html)
-    infobar = firstPageSoup.find('div', {'class': 'infobar'})
-    if infobar == -1:
-      # this image doesn't exist.
-      raise InvalidImageError(self)
-    numPages = int(infobar.find('span').text)
-    # fetch the topics on this page.
     self._topics = []
-    self.appendTopics(firstPage.html, firstPageUrl, self.connection.parallelCurl, {'page': 1})
+    if maxPage is None:
+      # first, get the first page.
+      firstPageParams = {
+        'md5': self.md5,
+        'page': 1
+      }
+      firstPageUrl = 'https://images.endoftheinter.net/imagemap.php?' + urllib.urlencode(firstPageParams)
+      firstPage = self.connection.page(firstPageUrl)
+      firstPageSoup = bs4.BeautifulSoup(firstPage.html)
+      infobar = firstPageSoup.find('div', {'class': 'infobar'})
+      if infobar == -1:
+        # this image doesn't exist.
+        raise InvalidImageError(self)
+      numPages = int(infobar.find('span').text)
+      # fetch the topics on this page.
+      self.appendTopics(firstPage.html, firstPageUrl, self.connection.parallelCurl, {'page': 1})
+      startPage = 2
+    else:
+      startPage = 1
+      numPages = maxPage
 
     # now fetch all the pages.
-    for page in range(2, int(numPages)+1):
+    for page in range(startPage, int(numPages)+1):
       topicPageParams = urllib.urlencode({'md5': self.md5, 'page': page})
       self.connection.parallelCurl.startrequest('https://images.endoftheinter.net/imagemap.php?' + topicPageParams, self.appendTopics, {'page': page})
     self.connection.parallelCurl.finishallrequests()
     self._topics = sorted(self._topics, key=lambda x: x._imagemap_order)
 
   @property
-  def topics(self):
+  def topics(self, maxPage=None):
     """
       Returns a list of topics which contain this image.
     """
     if self._topics is None:
-      self.getTopics()
+      self.getTopics(maxPage=maxPage)
     return self._topics
 
   def appendRelatedImages(self, html, url, curlHandle, params):
@@ -222,41 +227,46 @@ class Image(base.Base):
       self._related.append(newImage)
     return
 
-  def getRelatedImages(self):
+  def getRelatedImages(self, maxPage=None):
     """
       Fetches all images which are related to this image.
     """
-    # first, get the first page.
-    firstPageParams = {
-      'related': self.md5,
-      'page': 1
-    }
-    firstPageUrl = 'https://images.endoftheinter.net/imagemap.php?' + urllib.urlencode(firstPageParams)
-    firstPage = self.connection.page(firstPageUrl)
-    firstPageSoup = bs4.BeautifulSoup(firstPage.html)
-    infobar = firstPageSoup.find('div', {'class': 'infobar'})
-    if infobar == -1:
-      # this image doesn't exist.
-      raise InvalidImageError(self)
-    numPages = int(infobar.find('span').text)
-    # fetch the images on this page.
     self._related = []
-    self.appendRelatedImages(firstPage.html, firstPageUrl, self.connection.parallelCurl, {'page': 1})
+    if maxPage is None:
+      # first, get the first page.
+      firstPageParams = {
+        'related': self.md5,
+        'page': 1
+      }
+      firstPageUrl = 'https://images.endoftheinter.net/imagemap.php?' + urllib.urlencode(firstPageParams)
+      firstPage = self.connection.page(firstPageUrl)
+      firstPageSoup = bs4.BeautifulSoup(firstPage.html)
+      infobar = firstPageSoup.find('div', {'class': 'infobar'})
+      if infobar == -1:
+        # this image doesn't exist.
+        raise InvalidImageError(self)
+      numPages = int(infobar.find('span').text)
+      # fetch the images on this page.
+      self.appendRelatedImages(firstPage.html, firstPageUrl, self.connection.parallelCurl, {'page': 1})
+      startPage = 2
+    else:
+      startPage = 1
+      numPages =  maxPage
 
     # now fetch all the pages.
-    for page in range(2, int(numPages)+1):
+    for page in range(startPage, int(numPages)+1):
       relatedPageParams = urllib.urlencode({'related': self.md5, 'page': page})
       self.connection.parallelCurl.startrequest('https://images.endoftheinter.net/imagemap.php?' + relatedPageParams, self.appendRelatedImages, {'page': page})
     self.connection.parallelCurl.finishallrequests()
     self._related = sorted(self._related, key=lambda x: x._imagemap_order)
 
   @property
-  def related(self):
+  def related(self, maxPage=None):
     """
       Returns a list of images that are related to this image.
     """
     if self._related is None:
-      self.getRelatedImages()
+      self.getRelatedImages(maxPage=maxPage)
     return self._related
 
   @property

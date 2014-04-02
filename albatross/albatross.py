@@ -4,8 +4,6 @@
     License - WTF Public License, Version 2.0 <http://sam.zoy.org/wtfpl/COPYING>
     Author - Shal Dengeki <shaldengeki@gmail.com>
     REQUIRES - pytz, pycurl, pyparallelcurl
-
-    Connection - provides primary interface to ETI, and spawns topics / tags / links / users / etc.
 '''
 
 import re

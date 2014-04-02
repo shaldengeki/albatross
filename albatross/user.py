@@ -61,6 +61,19 @@ class InvalidCSRFKeyError(albatross.Error):
       "HTML: " + self.html
     ])
 
+class CouldNotSendPMError(albatross.Error):
+  def __init__(self, user, html):
+    super(CouldNotSendPMError, self).__init__()
+    self.user = user
+    self.html = html
+  def __str__(self):
+    return "\n".join([
+      super(CouldNotSendPMError, self).__str__(),
+      "ID: " + unicode(self.user.id),
+      "HTML: " + self.html
+    ])
+
+
 class User(base.Base):
   '''
   User-loading object for albatross.
@@ -312,5 +325,5 @@ class User(base.Base):
     }
     response = self.connection.page('https://boards.endoftheinter.net/postmsg.php').post(post_fields)
     if 'Message To: ' in response:
-      raise 
+      raise CouldNotSendPMError(self, response)
     return True

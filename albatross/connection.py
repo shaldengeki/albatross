@@ -51,7 +51,8 @@ class Connection(object):
     self.cookieFile = cookieFile
     self.concurrents = int(concurrents)
     self.numRequests = 0
-    self.csrfKey = None
+    self.topicCSRFKey = None
+    self.userCSRFKey = None
     self.parallelCurlOptions = {}
     self.parallelCurl = self.cookieString = None
     if username and password:

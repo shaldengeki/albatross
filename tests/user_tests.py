@@ -145,6 +145,6 @@ class testUserClass(object):
     assert self.llamaGuy.im == None
 
   def testcheckUserPicture(self):
-    assert isinstance(self.validUser.picture, unicode) and self.validUser.picture == u"""//i3.endoftheinter.net/i/n/28a0b50c11fad37bcf6fc07f9c4481bc/qwantz-dinosaur.png"""
+    assert isinstance(self.validUser.picture, unicode) and len(self.validUser.picture) > 0
     assert self.htmlUser.picture == None
     assert isinstance(self.llamaGuy.picture, unicode) and self.llamaGuy.picture == u"//i1.endoftheinter.net/i/n/097c31cfa7bdafdddb7d603835efeb56/327485.jpg"

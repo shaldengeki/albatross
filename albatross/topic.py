@@ -40,11 +40,10 @@ class ArchivedTopicError(InvalidTopicError):
       ])
 
 class TopicPermissionError(InvalidTopicError):
-  def __str__(self):
-    return "\n".join([
-        super(TopicPermissionError, self).__str__(),
-      "PermissionError: " + unicode(self.topic.id)
-     ])
+  pass
+
+class ClosedTopicError(InvalidTopicError):
+  pass
 
 class Topic(base.Base):
   '''
@@ -169,8 +168,8 @@ class Topic(base.Base):
       self.set(self.parse(topicPage.html))
     else:
       raise connection.UnauthorizedError(self.connection)
-    if self._csrfKey != self.connection.csrfKey:
-      self.connection.csrfKey = self._csrfKey
+    if self._csrfKey != self.connection.topicCSRFKey:
+      self.connection.topicCSRFKey = self._csrfKey
 
   @property
   @base.loadable
@@ -291,13 +290,13 @@ class Topic(base.Base):
 
   def make_post(self, html):
     # get post-key.
-    if self.connection.csrfKey is None:
+    if self.connection.topicCSRFKey is None:
       self.load()
     if isinstance(html, unicode):
       html = html.encode('utf-8')
     post_fields = {
       'topic': self.id,
-      'h': self.connection.csrfKey,
+      'h': self.connection.topicCSRFKey,
       'message': html,
       '-ajaxCounter': 0
     }

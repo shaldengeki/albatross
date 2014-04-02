@@ -8,6 +8,7 @@
     User - User information retrieval and manipulation.
 '''
 
+import bs4
 import datetime
 import HTMLParser
 import pytz
@@ -24,9 +25,41 @@ class InvalidUserError(albatross.Error):
     self.user = user
   def __str__(self):
     return "\n".join([
-        super(InvalidUserError, self).__str__(),
+      super(InvalidUserError, self).__str__(),
       "ID: " + unicode(self.user.id)
-      ])
+    ])
+
+class InvalidPMSubjectError(albatross.Error):
+  def __init__(self, subject):
+    super(InvalidPMSubjectError, self).__init__()
+    self.subject = subject
+  def __str__(self):
+    return "\n".join([
+      super(InvalidPMSubjectError, self).__str__(),
+      "Subject: " + self.subject
+    ])
+
+class InvalidPMMessageError(albatross.Error):
+  def __init__(self, message):
+    super(InvalidPMMessageError, self).__init__()
+    self.message = message
+  def __str__(self):
+    return "\n".join([
+      super(InvalidPMMessageError, self).__str__(),
+      "Message: " + self.message
+    ])
+
+class InvalidCSRFKeyError(albatross.Error):
+  def __init__(self, user, html):
+    super(InvalidCSRFKeyError, self).__init__()
+    self.user = user
+    self.html = html
+  def __str__(self):
+    return "\n".join([
+      super(InvalidCSRFKeyError, self).__str__(),
+      "ID: " + unicode(self.user.id),
+      "HTML: " + self.html
+    ])
 
 class User(base.Base):
   '''
@@ -37,7 +70,24 @@ class User(base.Base):
     self.id = id
     if not isinstance(self.id, int) or int(self.id) < 0:
       raise InvalidUserError(self)
-    self._name = self._level = self._banned = self._suspended = self._formerly = self._reputation = self._goodTokens = self._badTokens = self._tokens = self._created = self._active = self._lastActive = self._sig = self._quote = self._email = self._im = self._picture = None
+    self._name = None
+    self._level = None
+    self._banned = None
+    self._suspended = None
+    self._formerly = None
+    self._reputation = None
+    self._goodTokens = None
+    self._badTokens = None
+    self._tokens = None
+    self._created = None
+    self._active = None
+    self._lastActive = None
+    self._sig = None
+    self._quote = None
+    self._email = None
+    self._im = None
+    self._picture = None
+    self._csrfKey = None
 
   def __str__(self):
     if self._created is None:
@@ -234,3 +284,33 @@ class User(base.Base):
   @base.loadable
   def picture(self):
     return self._picture
+
+  def send_pm(self, subject, message):
+    # make sure inputs line up.
+    if len(subject) < 5 or len(subject) > 80:
+      raise InvalidPMSubjectError(self, subject)
+    if len(message) < 5 or len(subject) > 10240:
+      raise InvalidPMMessageError(self, message)
+    # get csrf key.
+    if self._csrfKey is None:
+      pmPage = self.connection.page('https://endoftheinter.net/postmsg.php?puser=' + unicode(self.id))
+      soup = bs4.BeautifulSoup(pmPage.html)
+      csrfTag = soup.find("input", {"name": "h"})
+      if not csrfTag:
+        raise InvalidCSRFKeyError(self, soup)
+      self.set({'csrfKey': csrfTag.get('value')})
+    if isinstance(subject, unicode):
+      subject = subject.encode('utf-8')
+    if isinstance(message, unicode):
+      message = message.encode('utf-8')
+    post_fields = {
+      'puser': self.id,
+      'h': self._csrfKey,
+      'title': subject,
+      'message': message,
+      'submit': 'Send Message'
+    }
+    response = self.connection.page('https://boards.endoftheinter.net/postmsg.php').post(post_fields)
+    if 'Message To: ' in response:
+      raise 
+    return True

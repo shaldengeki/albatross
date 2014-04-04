@@ -211,7 +211,7 @@ class Image(base.Base):
     # parse this page and append images to image list.
     soup = bs4.BeautifulSoup(html)
     imageGrid = soup.find('div', {'class': 'image_grid'})
-    if imageGrid == -1:
+    if imageGrid is None:
       # no images in this listing.
       return
     imageDivs = imageGrid.find_all('div', {'class': 'grid_block'})

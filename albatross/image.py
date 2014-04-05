@@ -33,6 +33,24 @@ class InvalidImageError(albatross.Error):
       "Filename: " + unicode(self.image.filename)
       ])
 
+def parse_imagemap(html):
+  """
+    Given some HTML containing an imagemap, return a list of {'md5': 'string', 'filename': 'string'} dicts.
+  """
+  # parse this page and append images to image list.
+  soup = bs4.BeautifulSoup(html)
+  imageGrid = soup.find('div', {'class': 'image_grid'})
+  images = []
+  if imageGrid is None:
+    return images
+  imageDivs = imageGrid.find_all('div', {'class': 'grid_block'})
+  for idx,imageDiv in enumerate(imageDivs):
+    imageLink = imageDiv.find('a')
+    imageUrl = urlparse.urlparse(imageLink.get('href'))
+    imageUrlParts = imageUrl.path.split('/')
+    images.append({'md5': imageUrlParts[-2], 'filename': imageUrlParts[-1]})
+  return images
+
 class Image(base.Base):
   '''
   Image-loading object for albatross.
@@ -203,25 +221,14 @@ class Image(base.Base):
     thisPage._html = html
     if not thisPage.authed:
       if self.connection.reauthenticate():
-        self.connection.parallelCurl.startrequest(url, self.appendPosts, paramArray)
+        self.connection.parallelCurl.startrequest(url, self.appendRelatedImages, paramArray)
         return
       else:
         raise connection.UnauthorizedError(self.connection)
 
     # parse this page and append images to image list.
-    soup = bs4.BeautifulSoup(html)
-    imageGrid = soup.find('div', {'class': 'image_grid'})
-    if imageGrid is None:
-      # no images in this listing.
-      return
-    imageDivs = imageGrid.find_all('div', {'class': 'grid_block'})
-    for idx,imageDiv in enumerate(imageDivs):
-      imageLink = imageDiv.find('a')
-      imageUrl = urlparse.urlparse(imageLink.get('href'))
-      imageUrlParts = imageUrl.path.split('/')
-      filename = imageUrlParts[-1]
-      md5 = imageUrlParts[-2]
-      newImage = self.connection.image(md5=md5, filename=filename)
+    for idx,image in enumerate(parse_imagemap(html)):
+      newImage = self.connection.image(md5=image['md5'], filename=image['filename'])
       newImage.set({'imagemap_order': (params['page'], idx)})
       self._related.append(newImage)
     return

@@ -20,6 +20,7 @@ import albatross
 import connection
 import page
 import base
+from image import parse_imagemap
 
 class InvalidTopicError(albatross.Error):
   def __init__(self, topic):
@@ -55,7 +56,18 @@ class Topic(base.Base):
     self.page = page
     if not isinstance(id, int) or int(id) < 1:
       raise InvalidTopicError(self)
-    self._closed = self._archived = self._date = self._title = self._user = self._pages = self._posts = self._postCount = self._tags = self._lastPostTime = self._csrfKey = None
+    self._closed = None
+    self._archived = None
+    self._date = None
+    self._title = None
+    self._user = None
+    self._pages = None
+    self._posts = None
+    self._postCount = None
+    self._tags = None
+    self._lastPostTime = None
+    self._csrfKey = None
+    self._images = None
     self._postIDs = {}
 
   def __str__(self):
@@ -287,6 +299,64 @@ class Topic(base.Base):
       self._postCount = len(self.posts())
     return self._postCount
 
+  def appendImages(self, html, url, curlHandle, params):
+    if not html:
+      thisPage = self.connection.page(url)
+      raise page.PageLoadError(thisPage)
+    
+    thisPage = page.Page(self.connection, url)
+    thisPage._html = html
+    if not thisPage.authed:
+      if self.connection.reauthenticate():
+        self.connection.parallelCurl.startrequest(url, self.appendImages, paramArray)
+        return
+      else:
+        raise connection.UnauthorizedError(self.connection)
+
+    # parse this page and append images to image list.
+    for idx,image in enumerate(parse_imagemap(html)):
+      newImage = self.connection.image(md5=image['md5'], filename=image['filename'])
+      newImage.set({'imagemap_order': (params['page'], idx)})
+      self._images.append(newImage)
+    return
+
+  def getImages(self, maxPage=None):
+    """
+      Fetches all images in this topic's map.
+    """
+    self._images = []
+    if maxPage is None:
+      # first, get the first page.
+      firstPageParams = {
+        'topic': self.id,
+        'page': 1
+      }
+      firstPageUrl = 'https://images.endoftheinter.net/imagemap.php?' + urllib.urlencode(firstPageParams)
+      firstPage = self.connection.page(firstPageUrl)
+      firstPageSoup = bs4.BeautifulSoup(firstPage.html)
+      infobar = firstPageSoup.find('div', {'class': 'infobar'})
+      if infobar == -1:
+        # this image doesn't exist.
+        raise InvalidTopicError(self)
+      numPages = int(infobar.find('span').text)
+      # fetch the images on this page.
+      self.appendImages(firstPage.html, firstPageUrl, self.connection.parallelCurl, {'page': 1})
+      startPage = 2
+    else:
+      startPage = 1
+      numPages =  maxPage
+
+    # now fetch all the pages.
+    for page in range(startPage, int(numPages)+1):
+      imageMapParams = urllib.urlencode({'topic': self.id, 'page': page})
+      self.connection.parallelCurl.startrequest('https://images.endoftheinter.net/imagemap.php?' + imageMapParams, self.appendImages, {'page': page})
+    self.connection.parallelCurl.finishallrequests()
+    self._images = sorted(self._images, key=lambda x: x._imagemap_order)
+
+  def images(self, maxPage=None):
+    if self._images is None:
+      self.getImages(maxPage=maxPage)
+    return self._images
 
   def make_post(self, html):
     # get post-key.

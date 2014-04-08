@@ -78,7 +78,7 @@ class User(base.Base):
   '''
   User-loading object for albatross.
   '''
-  def __init__(self, conn, id):
+  def __init__(self, conn, id, **kwargs):
     super(User, self).__init__(conn)
     self.id = id
     if not isinstance(self.id, int) or int(self.id) < 0:
@@ -101,6 +101,7 @@ class User(base.Base):
     self._im = None
     self._picture = None
     self._csrfKey = None
+    self.set(kwargs)
 
   def __str__(self):
     if self._created is None:

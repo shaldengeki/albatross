@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
     albatross - Provides link- and board-scraping functions for ETI.
     License - WTF Public License, Version 2.0 <http://sam.zoy.org/wtfpl/COPYING>
@@ -24,6 +25,9 @@ from post import Post
 from image import Image
 from user import User
 from userlist import UserList
+from pminbox import PMInbox
+from pmthread import PMThread
+from pm import PM
 
 class UnauthorizedError(albatross.Error):
   def __init__(self, cxn):
@@ -211,17 +215,26 @@ class Connection(object):
   def tags(self, tags=None, active=False):
     return TagList(self, tags=tags, active=active)
 
-  def tag(self, name):
-    return Tag(self, name)
+  def tag(self, *args, **kwargs):
+    return Tag(self, *args, **kwargs)
 
-  def post(self, id, topic):
-    return Post(self, id, topic)
+  def post(self, *args, **kwargs):
+    return Post(self, *args, **kwargs)
 
-  def user(self, id):
-    return User(self, id)
+  def user(self, *args, **kwargs):
+    return User(self, *args, **kwargs)
 
   def users(self):
     return UserList(self)
 
-  def image(self, md5, filename):
-    return Image(self, md5, filename)
+  def image(self, *args, **kwargs):
+    return Image(self, *args, **kwargs)
+
+  def inbox(self):
+    return PMInbox(self)
+
+  def pmThread(self, *args, **kwargs):
+    return PMThread(self, *args, **kwargs)
+
+  def pm(self, *args, **kwargs):
+    return PM(self, *args, **kwargs)

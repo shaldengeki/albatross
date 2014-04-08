@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
     albatross - Provides link- and board-scraping functions for ETI.
     License - WTF Public License, Version 2.0 <http://sam.zoy.org/wtfpl/COPYING>

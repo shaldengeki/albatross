@@ -10,3 +10,6 @@ from tag import *
 from taglist import *
 from user import *
 from userlist import *
+from pm import *
+from pminbox import *
+from pmthread import *

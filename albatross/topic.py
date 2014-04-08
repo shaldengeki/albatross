@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''
     albatross - Provides link- and board-scraping functions for ETI.
     License - WTF Public License, Version 2.0 <http://sam.zoy.org/wtfpl/COPYING>
@@ -335,7 +336,7 @@ class Topic(base.Base):
       firstPage = self.connection.page(firstPageUrl)
       firstPageSoup = bs4.BeautifulSoup(firstPage.html)
       infobar = firstPageSoup.find('div', {'class': 'infobar'})
-      if infobar == -1:
+      if infobar is None:
         # this image doesn't exist.
         raise InvalidTopicError(self)
       numPages = int(infobar.find('span').text)

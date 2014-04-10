@@ -26,7 +26,7 @@ class InvalidPostError(topic.InvalidTopicError):
   def __str__(self):
     return "\n".join([
       super(InvalidPostError, self).__str__(),
-      "PostID: " + unicode(self.post.id),
+      "ID: " + unicode(self.post.id),
       ])
 class MalformedPostError(InvalidPostError):
   def __init__(self, post, topic, text):
@@ -42,7 +42,7 @@ class Post(base.Base):
   '''
   Post-loading object for albatross.
   '''
-  def __init__(self, conn, id, topic):
+  def __init__(self, conn, id, topic, **kwargs):
     super(Post, self).__init__(conn)
     self.id = id
     self.topic = topic
@@ -55,12 +55,14 @@ class Post(base.Base):
     self._html = None
     self._sig = None
 
+    self.set(kwargs)
+
   def __str__(self):
     if self._date is None:
       self.load()
     return "\n".join([
       "ID: " + unicode(self.id),
-      "User: " + unicode(self.user['name']) + " (" + unicode(self.user['id']) + ")",
+      "User: " + unicode(self.user.name) + " (" + unicode(self.user.id) + ")",
       "Date: " + self.date.strftime("%m/%d/%Y %I:%M:%S %p"),
       "Post:",
       unicode(self.html),

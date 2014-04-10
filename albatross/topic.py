@@ -98,6 +98,16 @@ class Topic(base.Base):
   def __eq__(self, topic):
     return self.id == topic.id
 
+  def __getitem__(self, key):
+    return self.posts()[key]
+
+  def __setitem__(self, key, value):
+    self.posts()[key] = value
+
+  def __iter__(self):
+    for post in self.posts():
+      yield post
+
   def set(self, attrDict):
     """
     Sets attributes of this topic object with keys found in dict.

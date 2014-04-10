@@ -18,6 +18,8 @@ import xml.sax.saxutils
 import albatross
 import connection
 import base
+from pmthread import InvalidCSRFKeyError
+from pm import InvalidPMSubjectError, InvalidPMMessageError, CouldNotSendPMError
 
 class InvalidUserError(albatross.Error):
   def __init__(self, user):
@@ -28,51 +30,6 @@ class InvalidUserError(albatross.Error):
       super(InvalidUserError, self).__str__(),
       "ID: " + unicode(self.user.id)
     ])
-
-class InvalidPMSubjectError(albatross.Error):
-  def __init__(self, subject):
-    super(InvalidPMSubjectError, self).__init__()
-    self.subject = subject
-  def __str__(self):
-    return "\n".join([
-      super(InvalidPMSubjectError, self).__str__(),
-      "Subject: " + self.subject
-    ])
-
-class InvalidPMMessageError(albatross.Error):
-  def __init__(self, message):
-    super(InvalidPMMessageError, self).__init__()
-    self.message = message
-  def __str__(self):
-    return "\n".join([
-      super(InvalidPMMessageError, self).__str__(),
-      "Message: " + self.message
-    ])
-
-class InvalidCSRFKeyError(albatross.Error):
-  def __init__(self, user, html):
-    super(InvalidCSRFKeyError, self).__init__()
-    self.user = user
-    self.html = html
-  def __str__(self):
-    return "\n".join([
-      super(InvalidCSRFKeyError, self).__str__(),
-      "ID: " + unicode(self.user.id),
-      "HTML: " + self.html
-    ])
-
-class CouldNotSendPMError(albatross.Error):
-  def __init__(self, user, html):
-    super(CouldNotSendPMError, self).__init__()
-    self.user = user
-    self.html = html
-  def __str__(self):
-    return "\n".join([
-      super(CouldNotSendPMError, self).__str__(),
-      "ID: " + unicode(self.user.id),
-      "HTML: " + self.html
-    ])
-
 
 class User(base.Base):
   '''
@@ -303,7 +260,7 @@ class User(base.Base):
     # make sure inputs line up.
     if len(subject) < 5 or len(subject) > 80:
       raise InvalidPMSubjectError(self, subject)
-    if len(message) < 5 or len(subject) > 10240:
+    if len(message) < 5 or len(message) > 10240:
       raise InvalidPMMessageError(self, message)
     # get csrf key.
     if self._csrfKey is None:
@@ -311,7 +268,7 @@ class User(base.Base):
       soup = bs4.BeautifulSoup(pmPage.html)
       csrfTag = soup.find("input", {"name": "h"})
       if not csrfTag:
-        raise InvalidCSRFKeyError(self, soup)
+        raise InvalidCSRFKeyError(self, soup, user=self)
       self.set({'csrfKey': csrfTag.get('value')})
     if isinstance(subject, unicode):
       subject = subject.encode('utf-8')

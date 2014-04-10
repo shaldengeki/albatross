@@ -10,6 +10,7 @@
 '''
 
 import bs4
+import json
 import urllib
 import datetime
 import pytz
@@ -27,6 +28,20 @@ class InvalidPMThreadError(albatross.Error):
         super(InvalidPMThreadError, self).__str__(),
         "ID: " + unicode(self.thread.id)
       ])
+
+class InvalidCSRFKeyError(albatross.Error):
+  def __init__(self, html, thread=None, user=None):
+    super(InvalidCSRFKeyError, self).__init__()
+    self.html = html
+    self.thread = thread
+    self.user = None    
+  def __str__(self):
+    return "\n".join([
+      super(InvalidCSRFKeyError, self).__str__(),
+      "HTML: " + self.html,
+      "Thread: " + unicode(self.thread),
+      "User: " + unicode(self.user)
+    ])
 
 class MalformedPMThreadError(albatross.Error):
   def __init__(self, thread, html):
@@ -50,17 +65,18 @@ def parse_pms(conn, html):
   soup = bs4.BeautifulSoup(html)
   pmRows = soup.find_all('div', {'class': 'message-container'})
   for pmRow in pmRows:
-    pmInfo = parse_pm(pmRow)
+    pmInfo = parse_pm(conn, unicode(pmRow))
     pms.append(pmInfo)
   return pms
 
+from pm import InvalidPMMessageError
 class PMThread(base.Base):
   '''
   Private message thread-loading object for albatross.
   '''
   def __init__(self, conn, id, **kwargs):
     super(PMThread, self).__init__(conn)
-    self._id = int(id)
+    self.id = int(id)
     self._subject = None
     self._pmCount = None
     self._lastPMTime = None
@@ -74,7 +90,7 @@ class PMThread(base.Base):
 
   def __str__(self):
     return "\n".join([
-      "ID: " + unicode(self.conn.user_id),
+      "ID: " + unicode(self.id),
       "Subject: " + self.subject,
       "Page: " + unicode(self.page) + "/" + unicode(self.pages),
       "PMs:" + unicode(self.pmCount),
@@ -133,7 +149,11 @@ class PMThread(base.Base):
 
     # parse this page and append PMs to topic list.
     for idx,pm in enumerate(parse_pms(self.connection, html)):
-      newPM = self.connection.pm(**pm)
+      pm_id = pm['id']
+      thread = pm['thread']
+      del pm['id']
+      del pm['thread']
+      newPM = self.connection.pm(pm_id, thread, **pm)
       newPM.set({'pm_order': (params['page'], idx)})
       self._pms.append(newPM)
 
@@ -206,3 +226,40 @@ class PMThread(base.Base):
   @property
   def csrfKey(self):
     return self._csrfKey
+
+  def send_pm(self, message):
+    # make sure inputs line up.
+    if len(message) < 5 or len(message) > 10240:
+      raise InvalidPMMessageError(self, message)
+    # get csrf key.
+    if self._csrfKey is None:
+      threadPage = self.connection.page('https://endoftheinter.net/inboxthread.php?thread=' + unicode(self.id))
+      soup = bs4.BeautifulSoup(threadPage.html)
+      csrfTag = soup.find("input", {"name": "h"})
+      if not csrfTag:
+        raise InvalidCSRFKeyError(soup, thread=self)
+      self.set({'csrfKey': csrfTag.get('value')})
+    if isinstance(message, unicode):
+      message = message.encode('utf-8')
+    post_fields = {
+      'pm': self.id,
+      'h': self._csrfKey,
+      'message': message,
+      '-ajaxCounter': '1'
+    }
+    try:
+      response = self.connection.page('http://endoftheinter.net/async-post.php').post(post_fields)
+    except page.PageLoadError:
+      # invalid CSRF key.
+      raise InvalidCSRFKeyError(html, thread=self)
+    try:
+      response_obj = json.loads(response[1:])
+      if 'success' in response_obj:
+        return True
+    except ValueError:
+      # Invalid parameters.
+      if 'You are not authorized to view messages on this board.' in response:
+        raise InvalidPMThreadError(self)
+      elif 'Your message must be at least' in response:
+        raise InvalidPMMessageError(self, message)
+    return False

@@ -56,13 +56,18 @@ class Image(base.Base):
   '''
   Image-loading object for albatross.
   '''
-  def __init__(self, conn, md5, filename):
+  def __init__(self, conn, md5, filename, width=None, height=None):
     super(Image, self).__init__(conn)
     self.md5 = unicode(md5)
     self.filename = unicode(filename)
+    self.width = width
+    self.height = height
     if not isinstance(self.md5, unicode) or not isinstance(self.filename, unicode):
       raise InvalidImageError(self)
     self._related = self._relatedCount = self._topics = self._topicCount = None
+
+  def __repr__(self):
+    return '<Image ' + unicode(self.md5) + ':' + unicode(self.filename).encode('utf-8') + '>'
 
   def __str__(self):
     if self._related is None:
@@ -70,7 +75,9 @@ class Image(base.Base):
     return "\n".join([
       "MD5: " + unicode(self.md5),
       "Filename: " + unicode(self.filename),
-      "related: " + unicode(self.relatedCount),
+      "Width: " + unicode(self.width),
+      "Height: " + unicode(self.height),
+      "Related: " + unicode(self.relatedCount),
       "Topics: " + unicode(self.topicCount),
       ])
 
@@ -81,7 +88,7 @@ class Image(base.Base):
     return self.md5
 
   def __eq__(self, image):
-    return self.md5 == image.md5
+    return hasattr(image, 'md5') and self.md5 == image.md5
 
   def set(self, attrDict):
     """

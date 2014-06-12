@@ -24,8 +24,8 @@ import base
 from image import parse_imagemap
 
 class InvalidTopicError(albatross.Error):
-  def __init__(self, topic):
-    super(InvalidTopicError, self).__init__()
+  def __init__(self, topic, message=None):
+    super(InvalidTopicError, self).__init__(message=message)
     self.topic = topic
   def __str__(self):
     return "\n".join([

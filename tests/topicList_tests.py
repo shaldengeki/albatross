@@ -32,15 +32,26 @@ class testTopicListClass(object):
     self.anonymousTopicList = self.etiConn.topics(allowedTags=["Anonymous"]).search()
 
   def testgetTopicList(self):
-    assert isinstance(self.emptyTopicList, albatross.TopicList) and len(self.emptyTopicList) == 0
-    assert isinstance(self.currentTopicList, albatross.TopicList) and len(self.currentTopicList) > 0
-    assert isinstance(self.anonymousTopicList, albatross.TopicList) and len(self.anonymousTopicList) > 0
+    assert isinstance(self.emptyTopicList, albatross.TopicList)
+    assert len(self.emptyTopicList) == 0
+
+    assert isinstance(self.currentTopicList, albatross.TopicList)
+    assert len(self.currentTopicList) > 0
+
+    assert isinstance(self.anonymousTopicList, albatross.TopicList)
+    assert len(self.anonymousTopicList) > 0
 
   def testgetTopicInfoFromListing(self):
     assert isinstance(self.currentTopicList[0], albatross.Topic)
-    print self.cyberlightTopicDict
-    assert isinstance(self.cyberlightTopicDict, dict) and len(self.cyberlightTopicDict) > 0 and 'tags' in self.cyberlightTopicDict and 'NWS' in [tag.name for tag in self.cyberlightTopicDict['tags']]
-    assert isinstance(self.etiConn.topics().parse(self.currentTopicListPage), dict) and len(self.etiConn.topics().parse(self.currentTopicListPage)) > 0
+
+    assert isinstance(self.cyberlightTopicDict, dict)
+    assert len(self.cyberlightTopicDict) > 0
+
+    assert 'tags' in self.cyberlightTopicDict
+    assert 'NWS' in [tag.name for tag in self.cyberlightTopicDict['tags']]
+
+    assert isinstance(self.etiConn.topics().parse(self.currentTopicListPage), dict)
+    assert len(self.etiConn.topics().parse(self.currentTopicListPage)) > 0
 
   @raises(albatross.TopicListError)
   def testgetTopicInfoFromEmptyListing(self):
@@ -51,9 +62,20 @@ class testTopicListClass(object):
     self.emptyTopicList[0]
     
   def testsearchTopics(self):
-    assert isinstance(self.emptyTopicSearch, albatross.TopicList) and len(self.emptyTopicSearch) == 0
-    assert isinstance(self.contradictoryTopicSearch, albatross.TopicList) and len(self.contradictoryTopicSearch) == 0
-    assert isinstance(self.nwsTopicSearch, albatross.TopicList) and len(self.nwsTopicSearch) > 0
-    assert isinstance(self.archivesTopicSearch, albatross.TopicList) and len(self.archivesTopicSearch) > 0
-    assert isinstance(self.multiTagTopicSearch, albatross.TopicList) and len(self.multiTagTopicSearch) > 0
-    assert isinstance(self.anonymousTopicSearch, albatross.TopicList) and len(self.anonymousTopicSearch) > 0
+    assert isinstance(self.emptyTopicSearch, albatross.TopicList)
+    assert len(self.emptyTopicSearch) == 0
+
+    assert isinstance(self.contradictoryTopicSearch, albatross.TopicList)
+    assert len(self.contradictoryTopicSearch) == 0
+
+    assert isinstance(self.nwsTopicSearch, albatross.TopicList)
+    assert len(self.nwsTopicSearch) > 0
+
+    assert isinstance(self.archivesTopicSearch, albatross.TopicList)
+    assert len(self.archivesTopicSearch) > 0
+
+    assert isinstance(self.multiTagTopicSearch, albatross.TopicList)
+    assert len(self.multiTagTopicSearch) > 0
+
+    assert isinstance(self.anonymousTopicSearch, albatross.TopicList)
+    assert len(self.anonymousTopicSearch) > 0

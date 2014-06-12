@@ -24,6 +24,12 @@ class testPostClass(object):
     self.anonymousTopic = self.etiConn.topic(8431797)
     self.anonymousPost = self.etiConn.post(124662128, self.anonymousTopic)
 
+    self.postWithImage = self.etiConn.post(63243281, self.etiConn.topic(6000000))
+    self.postImage = self.etiConn.image(md5="13a40731e96b40ec938a8cf21d898a6c", filename="duck_taped.jpg")
+    self.archivedPostWithImage = self.etiConn.post(67880374, self.archivedTopic)
+    self.archivedPostImage = self.etiConn.image(md5="e8b39228c9965e28fe5670bcbd420013", filename="drsfyhg.png")
+    self.unpostedImage = self.etiConn.image(md5="84427d35982d0a38805d9e2f8d5c82fe", filename="Spring 2014.png")
+
   @raises(TypeError)
   def testNoIDInvalidPost(self):
     self.etiConn.post()
@@ -48,15 +54,25 @@ class testPostClass(object):
     assert isinstance(self.validPost, albatross.Post)
 
   def testgetPostHTML(self):
-    assert isinstance(self.validPost.html, unicode) and len(self.validPost.html) > 0
+    assert isinstance(self.validPost.html, unicode) 
+    assert len(self.validPost.html) > 0
     assert self.starcraftPost.html == 'and does that figure in to who you get matched up against on ladder<br />'
     assert self.archivedPost.html == 'I think Moltar and I are the only ones. <br />'
     assert self.anonymousPost.html == "two bra and panty sets, a casual dress, a six pack of panties, and six assorted patterned pantyhose.<br />\n<br />\ni'm really glad i have the opportunity to try this now."
 
-  def testPostContains(self):
-    assert 'does that figure in to' in self.starcraftPost and 'OHGODTHISSTRINGDOESNTEXIST' not in self.starcraftPost
-    assert 'Moltar and I' in self.archivedPost and 'HEYNEITHERDOESTHISONE' not in self.archivedPost
-    assert "i'm really glad" in self.anonymousPost and 'GUESSWHATNOTTHISONEEITHER' not in self.anonymousPost
+  def testPostContainsText(self):
+    assert 'does that figure in to' in self.starcraftPost 
+    assert 'OHGODTHISSTRINGDOESNTEXIST' not in self.starcraftPost
+    assert 'Moltar and I' in self.archivedPost 
+    assert 'HEYNEITHERDOESTHISONE' not in self.archivedPost
+    assert "i'm really glad" in self.anonymousPost 
+    assert 'GUESSWHATNOTTHISONEEITHER' not in self.anonymousPost
+
+  def testPostContainsImage(self):
+    assert self.postImage in self.postWithImage
+    assert self.unpostedImage not in self.postWithImage
+    assert self.archivedPostImage in self.archivedPostWithImage 
+    assert self.unpostedImage not in self.archivedPostWithImage
 
   def testgetPostSig(self):
     assert self.starcraftPost.sig == """<span class="pr">Big Strange Dojo: Big. Strange -- Vortex.</span>"""
@@ -64,25 +80,29 @@ class testPostClass(object):
     assert self.anonymousPost.sig == ""
 
   def testgetPostID(self):
-    assert isinstance(self.validPost.id, int) and self.validPost.id > 0
+    assert isinstance(self.validPost.id, int) 
+    assert self.validPost.id > 0
     assert self.starcraftPost.id == 81909003
     assert self.archivedPost.id == 67630266
     assert self.anonymousPost.id == 124662128
 
   def testgetPostUsername(self):
-    assert isinstance(self.validPost.user.name, unicode) and len(self.validPost.user.name) > 0
+    assert isinstance(self.validPost.user.name, unicode) 
+    assert len(self.validPost.user.name) > 0
     assert self.starcraftPost.user.name == 'tsutter810'
     assert self.archivedPost.user.name == 'Kiffe'
     assert self.anonymousPost.user.name == 'Human'
 
   def testgetPostUserID(self):
-    assert isinstance(self.validPost.user.id, int) and self.validPost.user.id > 0
+    assert isinstance(self.validPost.user.id, int) 
+    assert self.validPost.user.id > 0
     assert self.starcraftPost.user.id == 4662
     assert self.archivedPost.user.id == 11689
     assert self.anonymousPost.user.id == 0
 
   def testgetPostDate(self):
-    assert isinstance(self.validPost.date, datetime.datetime) and self.validPost.date > datetime.datetime.fromtimestamp(0, tz=self.centralTimezone)
+    assert isinstance(self.validPost.date, datetime.datetime) 
+    assert self.validPost.date > datetime.datetime.fromtimestamp(0, tz=self.centralTimezone)
     assert self.starcraftPost.date == datetime.datetime.fromtimestamp(1296773983, tz=self.centralTimezone)
     assert self.archivedPost.date == datetime.datetime.fromtimestamp(1271042261, tz=self.centralTimezone)
     assert self.anonymousPost.date == datetime.datetime.fromtimestamp(1366924222, tz=self.centralTimezone)

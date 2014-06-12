@@ -35,7 +35,7 @@ class TopicList(base.Base):
   '''
   def __init__(self, conn, allowedTags=None, forbiddenTags=None):
     super(TopicList, self).__init__(conn)
-    self._topics = []
+    self._topics = None
     self._allowedTags = allowedTags
     self._forbiddenTags = forbiddenTags
   def __getitem__(self, index):
@@ -49,8 +49,6 @@ class TopicList(base.Base):
   def __iter__(self):
     for topic in self.topics:
       yield topic
-  def __reversed__(self):
-    return self.topics[::-1]
   def __contains__(self, topic):
     return any((topic.id == containedTopic.id for containedTopic in self.topics))
 
@@ -168,4 +166,6 @@ class TopicList(base.Base):
 
   @property
   def topics(self):
+    if self._topics is None:
+      self.search()
     return self._topics

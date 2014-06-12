@@ -18,15 +18,15 @@ import urllib
 import albatross
 from page import Page
 from topic import Topic
-from topiclist import TopicList
+from topic_list import TopicList
 from tag import Tag
-from taglist import TagList
+from tag_list import TagList
 from post import Post
 from image import Image
 from user import User
-from userlist import UserList
-from pminbox import PMInbox
-from pmthread import PMThread
+from user_list import UserList
+from pm_inbox import PMInbox
+from pm_thread import PMThread
 from pm import PM
 
 class UnauthorizedError(albatross.Error):

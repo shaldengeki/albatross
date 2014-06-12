@@ -53,8 +53,6 @@ You can fetch topic posts like so:
     
     oneTopic = etiConn.topic(7823107)
     # alternatively:
-    oneTopic = albatross.Topic(etiConn, 7823107)
-    # or even:
     oneTopic = etiConn.topics(allowedTags=["Anime"]).search(query="Ritsu's", recurse=True)[0]
     print oneTopic.posts()[0]
 
@@ -62,8 +60,6 @@ And from there, post info like so:
 
     onePost = etiConn.post(104123023, oneTopic)
     # alternatively:
-    onePost = albatross.Post(etiConn, 104123023, oneTopic)
-    # or even:
     onePost = oneTopic.posts()[0]
     print onePost
 
@@ -71,8 +67,6 @@ You can also fetch user info:
     
     oneUser = etiConn.user(1)
     # alternatively:
-    oneUser = albatross.User(etiConn, 1)
-    # or maybe:
     someUsers = etiConn.users.search("guy", recurse=True)
     print oneUser
 

@@ -48,12 +48,16 @@ class testTopicClass(object):
     assert isinstance(self.validTopic, albatross.Topic)
 
   def testcheckArchivedTopic(self):
-    assert isinstance(self.archivedTopic.archived, bool) and self.archivedTopic.archived
-    assert isinstance(self.validTopic.archived, bool) and not self.validTopic.archived
+    assert isinstance(self.archivedTopic.archived, bool)
+    assert self.archivedTopic.archived
+    assert isinstance(self.validTopic.archived, bool)
+    assert not self.validTopic.archived
 
   def testcheckClosedTopic(self):
-    assert isinstance(self.archivedTopic.closed, bool) and self.archivedTopic.closed
-    assert isinstance(self.validTopic.closed, bool) and not self.validTopic.closed
+    assert isinstance(self.archivedTopic.closed, bool)
+    assert self.archivedTopic.closed
+    assert isinstance(self.validTopic.closed, bool)
+    assert not self.validTopic.closed
   
   @raises(albatross.ArchivedTopicError)
   def testCheckInvalidArchivedStatus(self):
@@ -70,13 +74,18 @@ class testTopicClass(object):
     assert self.starcraftTopic.id == 6951014
     
   def testgetTopicTitle(self):
-    assert isinstance(self.starcraftTopic.title, unicode) and self.starcraftTopic.title
+    assert isinstance(self.starcraftTopic.title, unicode)
+    assert self.starcraftTopic.title
 
   def testgetTopicDate(self):
-    assert self.starcraftTopic.date and isinstance(self.starcraftTopic.date, datetime.datetime) and self.starcraftTopic.date == datetime.datetime.fromtimestamp(1296773983, tz=self.centralTimezone)
+    assert self.starcraftTopic.date
+    assert isinstance(self.starcraftTopic.date, datetime.datetime)
+    assert self.starcraftTopic.date == datetime.datetime.fromtimestamp(1296773983, tz=self.centralTimezone)
 
   def testgetTopicLastPostTime(self):
-    assert self.starcraftTopic.lastPostTime and isinstance(self.starcraftTopic.lastPostTime, datetime.datetime) and self.starcraftTopic.lastPostTime == datetime.datetime.fromtimestamp(1296774689, tz=self.centralTimezone)
+    assert self.starcraftTopic.lastPostTime
+    assert isinstance(self.starcraftTopic.lastPostTime, datetime.datetime)
+    assert self.starcraftTopic.lastPostTime == datetime.datetime.fromtimestamp(1296774689, tz=self.centralTimezone)
 
   def testgetTopicPageNum(self):
     assert self.starcraftTopic.page == 1
@@ -94,14 +103,25 @@ class testTopicClass(object):
     assert isinstance(self.archivedTopic.posts()[0], albatross.Post)
 
   def testgetPostCount(self):
-    assert isinstance(self.validTopic.postCount, int) and self.validTopic.postCount > 0
-    assert isinstance(self.starcraftTopic.postCount, int) and self.starcraftTopic.postCount == 2
-    assert isinstance(self.archivedTopic.postCount, int) and self.archivedTopic.postCount and self.archivedTopic.postCount == 106
+    assert isinstance(self.validTopic.postCount, int)
+    assert self.validTopic.postCount > 0
+    assert isinstance(self.starcraftTopic.postCount, int)
+    assert self.starcraftTopic.postCount == 2
+    assert isinstance(self.archivedTopic.postCount, int)
+    assert self.archivedTopic.postCount
+    assert self.archivedTopic.postCount == 106
 
   def testgetTopicTags(self):
-    assert isinstance(self.validTopic.tags, albatross.TagList) and self.lueTag in self.validTopic.tags
-    assert isinstance(self.starcraftTopic.tags, albatross.TagList) and len(self.starcraftTopic.tags) == 3 and self.archivedTag in self.starcraftTopic.tags and self.starcraftTag in self.starcraftTopic.tags and self.lueTag in self.starcraftTopic.tags
+    assert isinstance(self.validTopic.tags, albatross.TagList)
+    assert self.lueTag in self.validTopic.tags
+    assert isinstance(self.starcraftTopic.tags, albatross.TagList)
+    assert len(self.starcraftTopic.tags) == 3
+    assert self.archivedTag in self.starcraftTopic.tags
+    assert self.starcraftTag in self.starcraftTopic.tags
+    assert self.lueTag in self.starcraftTopic.tags
 
   def testgetTopicUser(self):
-    assert self.anonymousTopic.user.id == 0 and self.anonymousTopic.user.name == 'Human'
-    assert self.starcraftTopic.user.id == 4662 and self.starcraftTopic.user.name == 'tsutter810'
+    assert self.anonymousTopic.user.id == 0
+    assert self.anonymousTopic.user.name == 'Human'
+    assert self.starcraftTopic.user.id == 4662
+    assert self.starcraftTopic.user.name == 'tsutter810'

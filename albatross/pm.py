@@ -18,7 +18,7 @@ import albatross
 import page
 import post
 
-from pmthread import InvalidPMThreadError
+from pm_thread import InvalidPMThreadError
 class UnloadedPMError(InvalidPMThreadError):
   def __init__(self, pm):
     super(UnloadedPMError, self).__init__(pm.thread)

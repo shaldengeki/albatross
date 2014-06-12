@@ -31,7 +31,7 @@ class Base(object):
     self.connection = conn
 
   def load(self):
-    pass
+    raise NotImplementedError
 
   def set(self, attr_dict):
     """

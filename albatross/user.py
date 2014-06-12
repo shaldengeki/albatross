@@ -18,7 +18,7 @@ import xml.sax.saxutils
 import albatross
 import connection
 import base
-from pmthread import InvalidCSRFKeyError
+from pm_thread import InvalidCSRFKeyError
 from pm import InvalidPMSubjectError, InvalidPMMessageError, CouldNotSendPMError
 
 class InvalidUserError(albatross.Error):

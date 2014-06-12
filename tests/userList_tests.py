@@ -28,7 +28,8 @@ class testUserListClass(object):
     self.shaldengeki = self.etiConn.user(6731)
 
   def testgetTopicInfoFromListing(self):
-    assert isinstance(self.currentUserSearch.parse(self.currentUserSearchPage.html), dict) and len(self.currentUserSearch.parse(self.currentUserSearchPage.html)) > 0
+    assert isinstance(self.currentUserSearch.parse(self.currentUserSearchPage.html), dict)
+    assert len(self.currentUserSearch.parse(self.currentUserSearchPage.html)) > 0
 
   @raises(albatross.UserListError)
   def testgetTopicInfoFromEmptyListing(self):
@@ -39,7 +40,20 @@ class testUserListClass(object):
     self.emptyUserSearch[0]
 
   def testsearchUsers(self):
-    assert isinstance(self.emptyUserSearch, albatross.UserList) and len(self.emptyUserSearch) == 0
-    assert isinstance(self.currentUserSearch, albatross.UserList) and len(self.currentUserSearch) > 0
-    assert isinstance(self.multiplePageSearch, albatross.UserList) and len(self.multiplePageSearch) > 50 and isinstance(self.currentUserSearch[0], albatross.User) and self.llamaGuy in self.currentUserSearch
-    assert isinstance(self.singleUserSearch, albatross.UserList) and len(self.singleUserSearch) == 1 and self.shaldengeki in self.singleUserSearch
+    assert isinstance(self.emptyUserSearch, albatross.UserList)
+    assert len(self.emptyUserSearch) == 0
+
+    assert isinstance(self.currentUserSearch, albatross.UserList)
+    assert len(self.currentUserSearch) > 0
+
+    assert isinstance(self.multiplePageSearch, albatross.UserList)
+    assert len(self.multiplePageSearch) > 50
+
+    assert isinstance(self.currentUserSearch[0], albatross.User)
+
+    assert self.llamaGuy in self.currentUserSearch
+
+    assert isinstance(self.singleUserSearch, albatross.UserList)
+    assert len(self.singleUserSearch) == 1
+
+    assert self.shaldengeki in self.singleUserSearch
